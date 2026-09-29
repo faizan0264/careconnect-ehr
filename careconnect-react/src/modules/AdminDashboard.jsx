@@ -9,7 +9,7 @@ export const AdminDashboard = () => {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [showCredentials, setShowCredentials] = useState(true);
+  const [showCredentials, setShowCredentials] = useState(false);
   const [newUser, setNewUser] = useState({ 
     name: '', 
     email: '', 
