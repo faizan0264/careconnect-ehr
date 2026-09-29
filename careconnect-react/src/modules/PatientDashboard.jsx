@@ -72,11 +72,26 @@ export const PatientDashboard = () => {
   const isCurrentSlotBusy = occupiedSlots.includes(selectedSlot.trim().toUpperCase());
   const selectedDocObj = doctorsList.find(d => d.id === Number(selectedDoctorId)) || doctorsList[0];
 
-  const activeMeds = prescriptions.filter(p => p.status === 'Active' && Number(p.patientId) === Number(selectedPatient?.id));
-  const completedOrders = orders.filter(o => o.status === 'Completed' && Number(o.patientId) === Number(selectedPatient?.id));
-  const patientOrders = orders.filter(o => Number(o.patientId) === Number(selectedPatient?.id));
-  const patientAppointments = appointments.filter(a => Number(a.patientId) === Number(selectedPatient?.id));
-  const patientReports = (reports || []).filter(r => Number(r.patientId) === Number(selectedPatient?.id));
+  const activeMeds = prescriptions.filter(p => p.status === 'Active' && (
+    (selectedPatient?.mrn && p.mrn && p.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(p.patientId) === Number(selectedPatient?.id)
+  ));
+  const completedOrders = orders.filter(o => o.status === 'Completed' && (
+    (selectedPatient?.mrn && o.mrn && o.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(o.patientId) === Number(selectedPatient?.id)
+  ));
+  const patientOrders = orders.filter(o => 
+    (selectedPatient?.mrn && o.mrn && o.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(o.patientId) === Number(selectedPatient?.id)
+  );
+  const patientAppointments = appointments.filter(a => 
+    (selectedPatient?.mrn && a.mrn && a.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(a.patientId) === Number(selectedPatient?.id)
+  );
+  const patientReports = (reports || []).filter(r => 
+    (selectedPatient?.mrn && r.mrn && r.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(r.patientId) === Number(selectedPatient?.id)
+  );
 
   const filteredReports = patientReports.filter(r => {
     const matchesFilter = reportFilter === 'ALL' || r.reportType === reportFilter;
@@ -146,6 +161,9 @@ export const PatientDashboard = () => {
       timeSlot: selectedSlot,
       reason: appointmentReason,
       room: selectedDocObj.room,
+      patientId: selectedPatient?.id,
+      patientName: selectedPatient?.fullName || `${selectedPatient?.firstName || ''} ${selectedPatient?.lastName || ''}`.trim(),
+      mrn: selectedPatient?.mrn,
     });
 
     if (result && !result.success) {

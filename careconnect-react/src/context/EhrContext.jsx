@@ -146,8 +146,8 @@ export const EhrProvider = ({ children }) => {
     { id: 105, name: 'Maria Gonzalez', fullName: 'Maria Gonzalez', username: 'maria_g', password: 'password123', email: 'maria.g@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 26, 2026', patientId: 2, mrn: 'MRN-2026-0089' },
     { id: 106, name: 'Hospital Administrator', fullName: 'Hospital Administrator', username: 'admin', password: 'Admin#2026', email: 'admin@careconnect.org', role: 'Administrator', roleLabel: 'System Administrator', department: 'Hospital Administration', status: 'Active', lastLogin: 'Today, 09:00 AM' },
     { id: 107, name: 'Dr. Rajesh Sharma, MD', fullName: 'Dr. Rajesh Sharma, MD', username: 'dr.sharma', password: 'Doctor#2026', email: 'dr.sharma@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Cardiovascular Medicine', status: 'Active', lastLogin: 'Today, 09:30 AM' },
-    { id: 108, name: 'Aisha Patel', fullName: 'Aisha Patel', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 4, mrn: 'MRN-2026-0077' },
-    { id: 109, name: 'Rahul Verma', fullName: 'Rahul Verma', username: 'patient2', password: 'Patient#2026', email: 'rahul.verma@example.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 27, 2026', patientId: 5, mrn: 'MRN-2026-0088' },
+    { id: 108, name: 'Aisha Patel', fullName: 'Aisha Patel', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 77, mrn: 'MRN-2026-0077' },
+    { id: 109, name: 'Rahul Verma', fullName: 'Rahul Verma', username: 'patient2', password: 'Patient#2026', email: 'rahul.verma@example.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 27, 2026', patientId: 88, mrn: 'MRN-2026-0088' },
     { id: 110, name: 'Robert Chen', fullName: 'Robert Chen', username: 'robert_c', password: 'password123', email: 'robert.chen@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 25, 2026', patientId: 3, mrn: 'MRN-2026-0104' },
     { id: 111, name: 'Dr. Michael Chang, MD', fullName: 'Dr. Michael Chang, MD', username: 'dr_chang', password: 'password123', email: 'dr.chang@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Cardiology & Preventive Medicine', status: 'Active', lastLogin: 'Today, 09:30 AM' },
     { id: 112, name: 'Dr. Emily Davis, MD', fullName: 'Dr. Emily Davis, MD', username: 'dr_emily', password: 'password123', email: 'dr.emily@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Family & General Practice', status: 'Active', lastLogin: 'Today, 09:30 AM' },
@@ -216,7 +216,7 @@ export const EhrProvider = ({ children }) => {
       registeredDate: 'Sep 25, 2026',
     },
     {
-      id: 4,
+      id: 77,
       mrn: 'MRN-2026-0077',
       firstName: 'Aisha',
       lastName: 'Patel',
@@ -236,7 +236,7 @@ export const EhrProvider = ({ children }) => {
       registeredDate: 'Sep 24, 2026',
     },
     {
-      id: 5,
+      id: 88,
       mrn: 'MRN-2026-0088',
       firstName: 'Rahul',
       lastName: 'Verma',
@@ -289,7 +289,7 @@ export const EhrProvider = ({ children }) => {
     },
     {
       id: 703,
-      patientId: 4,
+      patientId: 77,
       patientName: 'Aisha Patel',
       mrn: 'MRN-2026-0077',
       doctorId: 107,
@@ -363,6 +363,111 @@ export const EhrProvider = ({ children }) => {
       uploadedAt: 'Sep 15, 2026'
     }
   ];
+
+  // Self-Healing Auto-Migration: Decouple mock seed patients (Aisha Patel -> ID 77, Rahul Verma -> ID 88)
+  // so their IDs NEVER collide with backend autoincrement primary keys (1, 2, 3, 4, 5...)
+  const migrateMockIds = () => {
+    try {
+      const savedPatients = loadStorage(STORAGE_KEY_PATIENTS, null);
+      if (savedPatients && Array.isArray(savedPatients)) {
+        let changed = false;
+        const cleaned = savedPatients.map(p => {
+          if ((p.mrn === 'MRN-2026-0077' || p.username === 'patient1' || p.fullName === 'Aisha Patel') && Number(p.id) === 4) {
+            changed = true;
+            return { ...p, id: 77 };
+          }
+          if ((p.mrn === 'MRN-2026-0088' || p.username === 'patient2' || p.fullName === 'Rahul Verma') && Number(p.id) === 5) {
+            changed = true;
+            return { ...p, id: 88 };
+          }
+          return p;
+        });
+        if (changed) saveStorage(STORAGE_KEY_PATIENTS, cleaned);
+      }
+
+      const savedUsers = loadStorage(STORAGE_KEY_USERS, null);
+      if (savedUsers && Array.isArray(savedUsers)) {
+        let changed = false;
+        const cleaned = savedUsers.map(u => {
+          if ((u.mrn === 'MRN-2026-0077' || u.username === 'patient1' || u.name === 'Aisha Patel') && Number(u.patientId) === 4) {
+            changed = true;
+            return { ...u, patientId: 77 };
+          }
+          if ((u.mrn === 'MRN-2026-0088' || u.username === 'patient2' || u.name === 'Rahul Verma') && Number(u.patientId) === 5) {
+            changed = true;
+            return { ...u, patientId: 88 };
+          }
+          return u;
+        });
+        if (changed) saveStorage(STORAGE_KEY_USERS, cleaned);
+      }
+
+      const savedAppts = loadStorage(STORAGE_KEY_APPOINTMENTS, null);
+      if (savedAppts && Array.isArray(savedAppts)) {
+        let changed = false;
+        const cleaned = savedAppts.map(a => {
+          if ((a.mrn === 'MRN-2026-0077' || a.patientName === 'Aisha Patel') && Number(a.patientId) === 4) {
+            changed = true;
+            return { ...a, patientId: 77 };
+          }
+          if ((a.mrn === 'MRN-2026-0088' || a.patientName === 'Rahul Verma') && Number(a.patientId) === 5) {
+            changed = true;
+            return { ...a, patientId: 88 };
+          }
+          return a;
+        });
+        if (changed) saveStorage(STORAGE_KEY_APPOINTMENTS, cleaned);
+      }
+
+      const savedEnc = loadStorage(STORAGE_KEY_ENCOUNTERS, null);
+      if (savedEnc && typeof savedEnc === 'object') {
+        let changed = false;
+        const updatedEnc = { ...savedEnc };
+        if (updatedEnc['4'] && (updatedEnc['4'].soap?.subjective?.includes('Aisha') || updatedEnc['4'].chiefComplaint?.includes('Cardiovascular'))) {
+          updatedEnc['77'] = { ...updatedEnc['4'], patientId: 77 };
+          delete updatedEnc['4'];
+          changed = true;
+        }
+        if (updatedEnc['5'] && (updatedEnc['5'].soap?.subjective?.includes('Rahul') || updatedEnc['5'].chiefComplaint?.includes('allergies'))) {
+          updatedEnc['88'] = { ...updatedEnc['5'], patientId: 88 };
+          delete updatedEnc['5'];
+          changed = true;
+        }
+        if (changed) saveStorage(STORAGE_KEY_ENCOUNTERS, updatedEnc);
+      }
+
+      const savedRx = loadStorage(STORAGE_KEY_PRESCRIPTIONS, null);
+      if (savedRx && Array.isArray(savedRx)) {
+        let changed = false;
+        const cleaned = savedRx.map(r => {
+          if (r.name?.includes('Vitamin D3') && Number(r.patientId) === 4) {
+            changed = true;
+            return { ...r, patientId: 77, mrn: 'MRN-2026-0077' };
+          }
+          if (r.name?.includes('Cetirizine') && Number(r.patientId) === 5) {
+            changed = true;
+            return { ...r, patientId: 88, mrn: 'MRN-2026-0088' };
+          }
+          return r;
+        });
+        if (changed) saveStorage(STORAGE_KEY_PRESCRIPTIONS, cleaned);
+      }
+
+      const savedOrders = loadStorage(STORAGE_KEY_ORDERS, null);
+      if (savedOrders && Array.isArray(savedOrders)) {
+        let changed = false;
+        const cleaned = savedOrders.map(o => {
+          if (o.name?.includes('Lipid Panel') && Number(o.patientId) === 4) {
+            changed = true;
+            return { ...o, patientId: 77, mrn: 'MRN-2026-0077' };
+          }
+          return o;
+        });
+        if (changed) saveStorage(STORAGE_KEY_ORDERS, cleaned);
+      }
+    } catch (e) {}
+  };
+  migrateMockIds();
 
   // Persistent Auth & Navigation state
   const savedAuth = loadStorage(STORAGE_KEY_AUTH, null);
@@ -524,19 +629,27 @@ export const EhrProvider = ({ children }) => {
         const cloudPatients = await api.getPatients();
         if (isMounted && Array.isArray(cloudPatients) && cloudPatients.length > 0) {
           setPatients(prev => {
-            const existingMrns = new Set(prev.map(p => (p.mrn || '').toLowerCase()));
-            const newOnes = cloudPatients
-              .filter(cp => 
-                cp.mrn && 
-                !existingMrns.has(cp.mrn.toLowerCase()) && 
-                !deletedMrnSet.has(cp.mrn.toLowerCase())
-              )
-              .map(cp => ({
+            const updated = [...prev];
+            for (const cp of cloudPatients) {
+              if (!cp.mrn || deletedMrnSet.has(cp.mrn.toLowerCase())) continue;
+              const formattedCp = {
                 ...cp,
                 fullName: cp.fullName || `${cp.firstName || ''} ${cp.lastName || ''}`.trim() || 'Patient',
                 age: cp.dateOfBirth ? calculateAgeFromDob(cp.dateOfBirth, cp.age || 30) : (cp.age || 30),
-              }));
-            return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+              };
+              const idx = updated.findIndex(p => p.mrn && p.mrn.toLowerCase() === cp.mrn.toLowerCase());
+              if (idx !== -1) {
+                updated[idx] = { ...updated[idx], ...formattedCp };
+              } else {
+                // Ensure no conflicting patientId with a different mock/local patient
+                const clashIdx = updated.findIndex(p => Number(p.id) === Number(formattedCp.id) && p.mrn !== formattedCp.mrn);
+                if (clashIdx !== -1) {
+                  updated[clashIdx] = { ...updated[clashIdx], id: 7000 + Math.floor(Math.random() * 1000) };
+                }
+                updated.push(formattedCp);
+              }
+            }
+            return updated;
           });
         }
       } catch (e) {}
@@ -548,7 +661,7 @@ export const EhrProvider = ({ children }) => {
   // Selected Patient - dynamically resolves to logged-in patient if in Patient Portal!
   const [selectedPatientId, setSelectedPatientId] = useState(() => {
     const saved = loadStorage(STORAGE_KEY_SELECTED_PATIENT, null);
-    return saved ? Number(saved) : 1;
+    return saved !== null && saved !== undefined ? saved : 1;
   });
 
   useEffect(() => {
@@ -561,8 +674,8 @@ export const EhrProvider = ({ children }) => {
     // 1. PATIENT PORTAL: Strictly bind to the authenticated patient's profile. NEVER FALL BACK TO JOHN DOE OR list[0]!
     if (currentUser && (currentUser.role === 'ROLE_PATIENT' || currentUser.role === 'Patient')) {
       const match = list.find(p => 
-        (currentUser.patientId && Number(p.id) === Number(currentUser.patientId)) ||
         (currentUser.mrn && p.mrn && p.mrn.toLowerCase() === currentUser.mrn.toLowerCase()) ||
+        (currentUser.patientId && Number(p.id) === Number(currentUser.patientId)) ||
         (currentUser.username && p.username && p.username.toLowerCase() === currentUser.username.toLowerCase()) ||
         (currentUser.email && p.email && p.email.toLowerCase() === currentUser.email.toLowerCase()) ||
         (currentUser.fullName && p.fullName && p.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) ||
@@ -602,8 +715,11 @@ export const EhrProvider = ({ children }) => {
       };
     }
 
-    // 2. DOCTOR / ADMIN PORTAL: Resolves to selectedPatientId
-    const active = list.find(p => Number(p.id) === Number(selectedPatientId)) || list[0] || initialPatients[0];
+    // 2. DOCTOR / ADMIN PORTAL: Resolves to selectedPatientId (by MRN first, then by numeric ID)
+    const active = list.find(p => 
+      (selectedPatientId && p.mrn && String(p.mrn).trim().toLowerCase() === String(selectedPatientId).trim().toLowerCase()) ||
+      (selectedPatientId && Number(p.id) === Number(selectedPatientId))
+    ) || list[0] || initialPatients[0];
     if (active) {
       const resolvedAge = active.dateOfBirth ? calculateAgeFromDob(active.dateOfBirth, active.age || 30) : (active.age || 30);
       return { ...active, age: resolvedAge };
@@ -614,11 +730,12 @@ export const EhrProvider = ({ children }) => {
   // Keep selectedPatientId in sync with the active patient in the patient portal
   useEffect(() => {
     if (currentUser && (currentUser.role === 'ROLE_PATIENT' || currentUser.role === 'Patient')) {
-      if (selectedPatient && selectedPatient.id && Number(selectedPatientId) !== Number(selectedPatient.id)) {
-        setSelectedPatientId(selectedPatient.id);
+      const activeIdentifier = selectedPatient?.mrn || selectedPatient?.id;
+      if (activeIdentifier && selectedPatientId !== activeIdentifier) {
+        setSelectedPatientId(activeIdentifier);
       }
     }
-  }, [currentUser, selectedPatient?.id, selectedPatientId]);
+  }, [currentUser, selectedPatient?.id, selectedPatient?.mrn, selectedPatientId]);
 
   // Initial Clinical Encounters (per-patient baseline)
   const initialEncounters = {
@@ -697,9 +814,9 @@ export const EhrProvider = ({ children }) => {
       isSigned: true,
       signedAt: '11:55 AM',
     },
-    4: {
-      id: 1004,
-      patientId: 4,
+    77: {
+      id: 1077,
+      patientId: 77,
       hasEncounter: true,
       date: 'Sep 24, 2026 • 09:15 AM',
       doctor: 'Dr. Rajesh Sharma, MD',
@@ -722,9 +839,9 @@ export const EhrProvider = ({ children }) => {
       isSigned: false,
       signedAt: null,
     },
-    5: {
-      id: 1005,
-      patientId: 5,
+    88: {
+      id: 1088,
+      patientId: 88,
       hasEncounter: true,
       date: 'Sep 27, 2026 • 03:00 PM',
       doctor: 'Dr. Rajesh Sharma, MD',
@@ -783,7 +900,8 @@ export const EhrProvider = ({ children }) => {
     },
     {
       id: 304,
-      patientId: 4,
+      patientId: 77,
+      mrn: 'MRN-2026-0077',
       name: 'Lipid Panel & Fasting Glucose',
       type: 'Laboratory',
       priority: 'Routine',
@@ -798,6 +916,7 @@ export const EhrProvider = ({ children }) => {
     {
       id: 501,
       patientId: 1,
+      mrn: 'MRN-2026-0042',
       name: 'Albuterol Sulfate Inhaler',
       dosage: '90 mcg',
       frequency: '2 puffs every 4-6 hours as needed',
@@ -808,6 +927,7 @@ export const EhrProvider = ({ children }) => {
     {
       id: 502,
       patientId: 1,
+      mrn: 'MRN-2026-0042',
       name: 'Lisinopril Oral Tablet',
       dosage: '10 mg',
       frequency: 'Once daily in the morning',
@@ -818,6 +938,7 @@ export const EhrProvider = ({ children }) => {
     {
       id: 503,
       patientId: 2,
+      mrn: 'MRN-2026-0089',
       name: 'Fluticasone Propionate Inhaler',
       dosage: '110 mcg',
       frequency: '2 puffs twice daily',
@@ -828,6 +949,7 @@ export const EhrProvider = ({ children }) => {
     {
       id: 504,
       patientId: 2,
+      mrn: 'MRN-2026-0089',
       name: 'Montelukast Sodium Tablet',
       dosage: '10 mg',
       frequency: 'Once daily at bedtime',
@@ -838,6 +960,7 @@ export const EhrProvider = ({ children }) => {
     {
       id: 505,
       patientId: 3,
+      mrn: 'MRN-2026-0104',
       name: 'Multivitamin Complete Formula',
       dosage: '1 tablet',
       frequency: 'Once daily with meals',
@@ -847,7 +970,8 @@ export const EhrProvider = ({ children }) => {
     },
     {
       id: 506,
-      patientId: 4,
+      patientId: 77,
+      mrn: 'MRN-2026-0077',
       name: 'Vitamin D3 (Cholecalciferol)',
       dosage: '2000 IU',
       frequency: 'Once daily in the morning',
@@ -857,7 +981,8 @@ export const EhrProvider = ({ children }) => {
     },
     {
       id: 507,
-      patientId: 5,
+      patientId: 88,
+      mrn: 'MRN-2026-0088',
       name: 'Cetirizine Hydrochloride',
       dosage: '10 mg',
       frequency: 'Once daily as needed for allergy symptoms',
@@ -885,6 +1010,7 @@ export const EhrProvider = ({ children }) => {
 
   // Dynamically resolve the active patient's encounter
   const encounter = useMemo(() => {
+    const mrnKey = selectedPatient?.mrn;
     const pid = selectedPatient?.id || 1;
     const defaultVitals = {
       bpSystolic: 120,
@@ -901,17 +1027,20 @@ export const EhrProvider = ({ children }) => {
       plan: '1. Complete clinical workup and baseline laboratory profiling.\n2. Formulate ongoing care plan.',
     };
 
-    if (encountersMap && typeof encountersMap === 'object' && encountersMap[pid]) {
-      const e = encountersMap[pid];
-      return {
-        ...e,
-        vitals: { ...defaultVitals, ...(e.vitals || {}) },
-        soap: { ...defaultSoap, ...(e.soap || {}) },
-      };
+    if (encountersMap && typeof encountersMap === 'object') {
+      const e = (mrnKey && encountersMap[mrnKey]) || encountersMap[pid];
+      if (e) {
+        return {
+          ...e,
+          vitals: { ...defaultVitals, ...(e.vitals || {}) },
+          soap: { ...defaultSoap, ...(e.soap || {}) },
+        };
+      }
     }
     return {
-      id: 1000 + pid,
+      id: 1000 + (typeof pid === 'number' ? pid : 1),
       patientId: pid,
+      mrn: mrnKey,
       hasEncounter: false,
       date: `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • 10:00 AM`,
       doctor: (currentUser?.role === 'ROLE_DOCTOR' || currentUser?.role === 'Doctor') ? currentUser.fullName : 'Dr. Sarah Smith, MD',
@@ -922,7 +1051,7 @@ export const EhrProvider = ({ children }) => {
       isSigned: false,
       signedAt: null,
     };
-  }, [encountersMap, selectedPatient?.id, selectedPatient?.firstName, selectedPatient?.lastName, currentUser]);
+  }, [encountersMap, selectedPatient?.id, selectedPatient?.mrn, selectedPatient?.firstName, selectedPatient?.lastName, currentUser]);
 
   // Clinical Doctors List
   const [doctorsList, setDoctorsList] = useState([
@@ -1102,8 +1231,8 @@ export const EhrProvider = ({ children }) => {
       const myNextAppt = appointments.find(a => 
         (a.doctorName === user.fullName || a.doctorId === user.id) && a.status !== 'Cancelled'
       );
-      if (myNextAppt && myNextAppt.patientId) {
-        setSelectedPatientId(myNextAppt.patientId);
+      if (myNextAppt && (myNextAppt.mrn || myNextAppt.patientId)) {
+        setSelectedPatientId(myNextAppt.mrn || myNextAppt.patientId);
       } else {
         setSelectedPatientId(1);
       }
@@ -1112,14 +1241,14 @@ export const EhrProvider = ({ children }) => {
     // If logging in as patient, update selectedPatientId to match their patient record!
     if (user.role === 'ROLE_PATIENT') {
       const match = patients.find(p => 
-        (user.patientId && Number(p.id) === Number(user.patientId)) ||
         (user.mrn && p.mrn && p.mrn.toLowerCase() === user.mrn.toLowerCase()) ||
+        (user.patientId && Number(p.id) === Number(user.patientId)) ||
         (user.username && p.username && p.username.toLowerCase() === user.username.toLowerCase()) ||
         (user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()) ||
         (user.fullName && p.fullName && p.fullName.toLowerCase() === user.fullName.toLowerCase()) ||
         (user.fullName && `${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase() === user.fullName.toLowerCase())
       );
-      const chosenPatientId = match ? match.id : (user.patientId || user.id);
+      const chosenPatientId = match ? (match.mrn || match.id) : (user.mrn || user.patientId || user.id);
       setSelectedPatientId(chosenPatientId);
       saveStorage(STORAGE_KEY_SELECTED_PATIENT, chosenPatientId);
     }
@@ -1509,13 +1638,15 @@ export const EhrProvider = ({ children }) => {
 
   // Doctor actions
   const updateVitals = (newVitals) => {
-    const pid = selectedPatient?.id || 1;
+    const encKey = selectedPatient?.mrn || selectedPatient?.id || 1;
     setEncountersMap(prev => {
-      const cur = prev[pid] || encounter;
+      const cur = prev[encKey] || prev[selectedPatient?.id] || encounter;
       return {
         ...prev,
-        [pid]: {
+        [encKey]: {
           ...cur,
+          patientId: selectedPatient?.id || cur.patientId,
+          mrn: selectedPatient?.mrn || cur.mrn,
           hasEncounter: true,
           vitals: { ...cur.vitals, ...newVitals },
         }
@@ -1525,13 +1656,15 @@ export const EhrProvider = ({ children }) => {
   };
 
   const updateSoap = (newSoap) => {
-    const pid = selectedPatient?.id || 1;
+    const encKey = selectedPatient?.mrn || selectedPatient?.id || 1;
     setEncountersMap(prev => {
-      const cur = prev[pid] || encounter;
+      const cur = prev[encKey] || prev[selectedPatient?.id] || encounter;
       return {
         ...prev,
-        [pid]: {
+        [encKey]: {
           ...cur,
+          patientId: selectedPatient?.id || cur.patientId,
+          mrn: selectedPatient?.mrn || cur.mrn,
           hasEncounter: true,
           soap: { ...cur.soap, ...newSoap },
         }
@@ -1541,13 +1674,15 @@ export const EhrProvider = ({ children }) => {
   };
 
   const signEncounter = () => {
-    const pid = selectedPatient?.id || 1;
+    const encKey = selectedPatient?.mrn || selectedPatient?.id || 1;
     setEncountersMap(prev => {
-      const cur = prev[pid] || encounter;
+      const cur = prev[encKey] || prev[selectedPatient?.id] || encounter;
       return {
         ...prev,
-        [pid]: {
+        [encKey]: {
           ...cur,
+          patientId: selectedPatient?.id || cur.patientId,
+          mrn: selectedPatient?.mrn || cur.mrn,
           hasEncounter: true,
           doctor: currentUser?.fullName || cur.doctor,
           status: 'Completed',
@@ -1564,6 +1699,7 @@ export const EhrProvider = ({ children }) => {
       ...order,
       id: orders.length + 301,
       patientId: selectedPatient.id,
+      mrn: selectedPatient.mrn,
       status: 'Pending',
       orderedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       result: null,
@@ -1589,6 +1725,7 @@ export const EhrProvider = ({ children }) => {
       ...prescription,
       id: prescriptions.length + 501,
       patientId: selectedPatient.id,
+      mrn: selectedPatient.mrn,
       status: 'Active',
       override: overrideReason,
     };
@@ -1972,11 +2109,12 @@ export const EhrProvider = ({ children }) => {
     }
 
     const newId = appointments.length + 701;
+    const patientFullName = selectedPatient.fullName || `${selectedPatient.firstName || ''} ${selectedPatient.lastName || ''}`.trim() || 'Patient';
     const newAppt = {
       ...appointmentData,
       id: newId,
       patientId: selectedPatient.id,
-      patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+      patientName: patientFullName,
       mrn: selectedPatient.mrn,
       status: 'Confirmed',
       room: appointmentData.room || 'Exam Room 3',
@@ -1987,7 +2125,7 @@ export const EhrProvider = ({ children }) => {
     try {
       await api.bookAppointment({
         patientId: selectedPatient.id,
-        patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
+        patientName: patientFullName,
         doctorId: appointmentData.doctorId,
         doctorName: appointmentData.doctorName,
         department: appointmentData.department,

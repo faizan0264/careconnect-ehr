@@ -130,8 +130,14 @@ export const DoctorDashboard = () => {
     : allClinicAppointments;
 
   // Filter orders and prescriptions strictly by active patient chart
-  const patientOrders = orders.filter(o => Number(o.patientId) === Number(selectedPatient?.id));
-  const patientPrescriptions = prescriptions.filter(p => Number(p.patientId) === Number(selectedPatient?.id));
+  const patientOrders = orders.filter(o => 
+    (selectedPatient?.mrn && o.mrn && o.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(o.patientId) === Number(selectedPatient?.id)
+  );
+  const patientPrescriptions = prescriptions.filter(p => 
+    (selectedPatient?.mrn && p.mrn && p.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(p.patientId) === Number(selectedPatient?.id)
+  );
 
   // Filtered patients
   const filteredPatients = patients.filter(p => 
@@ -387,9 +393,10 @@ export const DoctorDashboard = () => {
                 {displayedAppointments.map(a => (
                   <div
                     key={a.id}
-                    onClick={() => { setSelectedPatientId(a.patientId); setActiveTab('soap'); }}
+                    onClick={() => { setSelectedPatientId(a.mrn || a.patientId); setActiveTab('soap'); }}
                     className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2 ${
-                      a.patientId === selectedPatient.id
+                      (a.mrn && selectedPatient?.mrn && a.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+                      Number(a.patientId) === Number(selectedPatient?.id)
                         ? 'border-blue-500 bg-blue-50/50 shadow-xs ring-1 ring-blue-500'
                         : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70'
                     }`}
@@ -466,10 +473,11 @@ export const DoctorDashboard = () => {
                 <tbody className="divide-y divide-slate-100">
                   {filteredPatients.map(p => (
                     <tr 
-                      key={p.id}
-                      onClick={() => { setSelectedPatientId(p.id); setActiveTab('soap'); }}
+                      key={p.mrn || p.id}
+                      onClick={() => { setSelectedPatientId(p.mrn || p.id); setActiveTab('soap'); }}
                       className={`hover:bg-slate-50 cursor-pointer transition ${
-                        p.id === selectedPatient.id ? 'bg-blue-50/40' : ''
+                        (p.mrn && selectedPatient?.mrn && p.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+                        Number(p.id) === Number(selectedPatient?.id) ? 'bg-blue-50/40' : ''
                       }`}
                     >
                       <td className="px-5 py-3.5 font-mono font-bold text-blue-600">{p.mrn}</td>
@@ -489,7 +497,7 @@ export const DoctorDashboard = () => {
                       <td className="px-5 py-3.5 text-slate-500">{p.phone}</td>
                       <td className="px-5 py-3.5 text-right">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedPatientId(p.id); setActiveTab('soap'); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedPatientId(p.mrn || p.id); setActiveTab('soap'); }}
                           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold inline-flex items-center space-x-1"
                         >
                           <span>Open Chart →</span>
