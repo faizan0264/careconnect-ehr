@@ -186,6 +186,12 @@ export const AdminDashboard = () => {
     );
   });
 
+  // BUG-06 FIX: Deduplicate patients by MRN before counting to avoid inflated numbers from local+cloud merge
+  const deduplicatedPatients = patients.filter((p, idx, arr) => 
+    p.mrn ? arr.findIndex(x => x.mrn && x.mrn.toLowerCase() === p.mrn.toLowerCase()) === idx : true
+  );
+  const uniquePatientCount = deduplicatedPatients.length;
+
   const filteredLogs = auditLogs.filter(log => {
     const matchesFilter = logFilter === 'ALL' || log.action === logFilter;
     const matchesSearch = 
@@ -273,7 +279,7 @@ export const AdminDashboard = () => {
           <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
             activeTab === 'patients' ? 'bg-purple-700 text-white' : 'bg-blue-50 text-blue-700 border border-blue-200'
           }`}>
-            {patients.length}
+            {uniquePatientCount}
           </span>
         </button>
 
@@ -308,7 +314,7 @@ export const AdminDashboard = () => {
                 <span className="text-slate-400 font-bold uppercase text-[10px] group-hover:text-blue-600 transition">Total Patients</span>
                 <Users className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition" />
               </div>
-              <div className="text-2xl font-black text-blue-600">{patients.length}</div>
+              <div className="text-2xl font-black text-blue-600">{uniquePatientCount}</div>
               <span className="text-blue-600 text-[11px] font-semibold flex items-center space-x-1">
                 <span>Master Patient Index</span>
                 <span>→</span>

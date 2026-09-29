@@ -121,8 +121,14 @@ export const DoctorDashboard = () => {
   // Doctor appointment schedule filtering
   const [scheduleFilter, setScheduleFilter] = useState('MY_SCHEDULE');
   const myAppointments = appointments.filter(a => 
-    a.status !== 'Cancelled' && 
-    (a.doctorName === currentUser?.fullName || a.doctorId === currentUser?.id)
+    a.status !== 'Cancelled' && (
+      a.doctorName === currentUser?.fullName ||
+      a.doctorId === currentUser?.id ||
+      // Also match by username in case the doctor name differs slightly between local and backend
+      (currentUser?.username && a.doctorName && a.doctorName.toLowerCase().includes(
+        (currentUser.username || '').replace(/^dr[_.]?/, '').replace(/_/g, ' ').toLowerCase()
+      ))
+    )
   );
   const allClinicAppointments = appointments.filter(a => a.status !== 'Cancelled');
   const displayedAppointments = scheduleFilter === 'MY_SCHEDULE' 
@@ -214,7 +220,10 @@ export const DoctorDashboard = () => {
     setRxDrug('');
   };
 
-  const patientReports = (reports || []).filter(r => Number(r.patientId) === Number(selectedPatient.id));
+  const patientReports = (reports || []).filter(r => 
+    (selectedPatient?.mrn && r.mrn && r.mrn.toLowerCase() === selectedPatient.mrn.toLowerCase()) ||
+    Number(r.patientId) === Number(selectedPatient?.id)
+  );
   const filteredReports = patientReports.filter(r => {
     const matchesFilter = reportFilter === 'ALL' || r.reportType === reportFilter;
     const matchesSearch = !reportSearch.trim() || 

@@ -879,17 +879,34 @@ export const EhrProvider = ({ children }) => {
       };
     }
 
-    // 2. DOCTOR / ADMIN PORTAL: Resolves to selectedPatientId (by MRN first, then by numeric ID)
-    const active = list.find(p => 
+    // 2. DOCTOR / ADMIN PORTAL: Resolves to selectedPatientId (by MRN first, then numeric ID, then name)
+    let active = list.find(p => 
       (selectedPatientId && p.mrn && String(p.mrn).trim().toLowerCase() === String(selectedPatientId).trim().toLowerCase()) ||
       (selectedPatientId && Number(p.id) === Number(selectedPatientId))
-    ) || list[0] || initialPatients[0];
+    );
+    
+    // BUG-03 FIX: If ID/MRN lookup fails (happens when appointment stores a local Date.now() ID
+    // that differs from backend ID after cloud sync), try to find via the patientName stored in appointments
+    if (!active && selectedPatientId) {
+      const apptForId = appointments.find(a =>
+        a.patientId === selectedPatientId ||
+        String(a.mrn).toLowerCase() === String(selectedPatientId).toLowerCase()
+      );
+      if (apptForId && apptForId.patientName) {
+        active = list.find(p =>
+          (p.fullName && p.fullName.toLowerCase() === apptForId.patientName.toLowerCase()) ||
+          (`${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase() === apptForId.patientName.toLowerCase())
+        );
+      }
+    }
+    
+    active = active || list[0] || initialPatients[0];
     if (active) {
       const resolvedAge = active.dateOfBirth ? calculateAgeFromDob(active.dateOfBirth, active.age || 30) : (active.age || 30);
       return { ...active, age: resolvedAge };
     }
     return active;
-  }, [patients, selectedPatientId, currentUser]);
+  }, [patients, appointments, selectedPatientId, currentUser]);
 
   // Keep selectedPatientId in sync with the active patient in the patient portal
   useEffect(() => {
@@ -1310,16 +1327,33 @@ export const EhrProvider = ({ children }) => {
           (u.email && u.email.toLowerCase() === enteredUser)
         );
 
+        // Also try to find the matching patient record in the MPI for full demographics
+        const patientMatch = patients.find(p =>
+          (localUserMatch?.mrn && p.mrn && p.mrn.toLowerCase() === localUserMatch.mrn.toLowerCase()) ||
+          (localUserMatch?.patientId && Number(p.id) === Number(localUserMatch.patientId)) ||
+          (beAuth.username && p.username && p.username.toLowerCase() === beAuth.username.toLowerCase()) ||
+          (beAuth.fullName && p.fullName && p.fullName.toLowerCase() === beAuth.fullName.toLowerCase()) ||
+          (beAuth.fullName && `${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase() === beAuth.fullName.toLowerCase())
+        );
+
         user = {
           id: beAuth.userId || (localUserMatch ? localUserMatch.id : 101),
           role: roleNormalized,
           roleLabel: roleNormalized === 'ROLE_PATIENT' ? 'Patient' : (roleNormalized === 'ROLE_DOCTOR' ? 'Doctor / Physician' : 'System Administrator'),
           username: beAuth.username,
           fullName: beAuth.fullName || (localUserMatch ? localUserMatch.fullName : beAuth.username),
-          email: (localUserMatch && localUserMatch.email) || `${beAuth.username}@careconnect.org`,
+          email: (localUserMatch && localUserMatch.email) || (patientMatch && patientMatch.email) || `${beAuth.username}@careconnect.org`,
           department: roleNormalized === 'ROLE_PATIENT' ? 'Outpatient' : (roleNormalized === 'ROLE_DOCTOR' ? 'Clinical Care' : 'Hospital Administration'),
-          patientId: localUserMatch ? localUserMatch.patientId : (roleNormalized === 'ROLE_PATIENT' ? beAuth.userId : undefined),
-          mrn: localUserMatch ? localUserMatch.mrn : undefined,
+          // CRITICAL: Carry all patient identity fields so selectedPatient memo can find them after refresh
+          patientId: localUserMatch?.patientId || patientMatch?.id || (roleNormalized === 'ROLE_PATIENT' ? beAuth.userId : undefined),
+          mrn: localUserMatch?.mrn || patientMatch?.mrn || undefined,
+          dateOfBirth: localUserMatch?.dateOfBirth || patientMatch?.dateOfBirth || undefined,
+          age: localUserMatch?.age || patientMatch?.age || undefined,
+          phone: localUserMatch?.phone || patientMatch?.phone || undefined,
+          gender: localUserMatch?.gender || patientMatch?.gender || undefined,
+          bloodGroup: localUserMatch?.bloodGroup || patientMatch?.bloodGroup || undefined,
+          allergies: localUserMatch?.allergies || patientMatch?.allergies || undefined,
+          emergencyContact: localUserMatch?.emergencyContact || patientMatch?.emergencyContact || undefined,
           token: beAuth.token,
         };
       }
@@ -1377,6 +1411,14 @@ export const EhrProvider = ({ children }) => {
         department: found.department || (isDoc ? 'Internal Medicine' : 'General Care'),
         patientId: found.patientId,
         mrn: found.mrn,
+        // Carry full demographics so selectedPatient memo can identify patient after refresh
+        dateOfBirth: found.dateOfBirth,
+        age: found.age,
+        phone: found.phone,
+        gender: found.gender,
+        bloodGroup: found.bloodGroup,
+        allergies: found.allergies,
+        emergencyContact: found.emergencyContact,
       };
     }
 
