@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 
 const EhrContext = createContext(null);
@@ -619,44 +619,208 @@ export const EhrProvider = ({ children }) => {
     saveStorage(STORAGE_KEY_REPORTS, reports);
   }, [reports]);
 
-  // Sync to backend on mount if online
-  useEffect(() => {
-    let isMounted = true;
-    const syncCloudData = async () => {
-      try {
-        const deletedMrnsList = loadStorage(STORAGE_KEY_DELETED_PATIENTS, []);
-        const deletedMrnSet = new Set(deletedMrnsList.map(m => (m || '').toLowerCase()));
-        const cloudPatients = await api.getPatients();
-        if (isMounted && Array.isArray(cloudPatients) && cloudPatients.length > 0) {
-          setPatients(prev => {
-            const updated = [...prev];
-            for (const cp of cloudPatients) {
-              if (!cp.mrn || deletedMrnSet.has(cp.mrn.toLowerCase())) continue;
-              const formattedCp = {
-                ...cp,
-                fullName: cp.fullName || `${cp.firstName || ''} ${cp.lastName || ''}`.trim() || 'Patient',
-                age: cp.dateOfBirth ? calculateAgeFromDob(cp.dateOfBirth, cp.age || 30) : (cp.age || 30),
+  // Dual Cloud Synchronizer: Synchronizes both Master Patient Index and User Credentials from Spring Boot backend
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncCloudData = useCallback(async () => {
+    try {
+      setIsSyncing(true);
+      const deletedMrnsList = loadStorage(STORAGE_KEY_DELETED_PATIENTS, []);
+      const deletedMrnSet = new Set(deletedMrnsList.map(m => (m || '').toLowerCase()));
+
+      const [cloudPatients, cloudUsers] = await Promise.all([
+        api.getPatients().catch(() => null),
+        api.getUsers().catch(() => null),
+      ]);
+
+      let finalPatientsList = [];
+
+      // 1. Sync Patients from Cloud
+      if (Array.isArray(cloudPatients) && cloudPatients.length > 0) {
+        setPatients(prev => {
+          let updated = [...prev];
+          for (const cp of cloudPatients) {
+            if (!cp.mrn || deletedMrnSet.has(cp.mrn.toLowerCase())) continue;
+
+            const rawName = cp.fullName || `${cp.firstName || ''} ${cp.lastName || ''}`.trim() || 'Patient';
+            const calcAge = cp.dateOfBirth ? calculateAgeFromDob(cp.dateOfBirth, cp.age || 30) : (cp.age || 30);
+            const formattedCp = {
+              ...cp,
+              fullName: rawName,
+              age: calcAge,
+              contactPhone: cp.phone || cp.contactPhone || '',
+            };
+
+            // Match by MRN, or by identical phone and first name
+            const idx = updated.findIndex(p => 
+              (p.mrn && cp.mrn && p.mrn.toLowerCase() === cp.mrn.toLowerCase()) ||
+              (p.id && cp.id && Number(p.id) === Number(cp.id)) ||
+              (p.phone && cp.phone && p.phone === cp.phone && p.firstName && cp.firstName && p.firstName.toLowerCase() === cp.firstName.toLowerCase())
+            );
+
+            if (idx !== -1) {
+              updated[idx] = { 
+                ...updated[idx], 
+                ...formattedCp,
+                allergies: formattedCp.allergies || updated[idx].allergies,
+                bloodGroup: formattedCp.bloodGroup || updated[idx].bloodGroup,
+                gender: formattedCp.gender || updated[idx].gender,
               };
-              const idx = updated.findIndex(p => p.mrn && p.mrn.toLowerCase() === cp.mrn.toLowerCase());
-              if (idx !== -1) {
-                updated[idx] = { ...updated[idx], ...formattedCp };
-              } else {
-                // Ensure no conflicting patientId with a different mock/local patient
-                const clashIdx = updated.findIndex(p => Number(p.id) === Number(formattedCp.id) && p.mrn !== formattedCp.mrn);
-                if (clashIdx !== -1) {
-                  updated[clashIdx] = { ...updated[clashIdx], id: 7000 + Math.floor(Math.random() * 1000) };
-                }
-                updated.push(formattedCp);
+            } else {
+              // Ensure no conflicting patientId with a different mock/local patient (e.g. 77, 88)
+              const clashIdx = updated.findIndex(p => Number(p.id) === Number(formattedCp.id) && p.mrn !== formattedCp.mrn);
+              if (clashIdx !== -1) {
+                updated[clashIdx] = { ...updated[clashIdx], id: 7000 + Math.floor(Math.random() * 1000) };
               }
+              updated.push(formattedCp);
             }
-            return updated;
-          });
+          }
+          finalPatientsList = updated;
+          return updated;
+        });
+      }
+
+      // 2. Sync System Users from Cloud Users & Cloud Patients
+      setSystemUsers(prev => {
+        let updatedUsers = [...prev];
+
+        // A. Merge Cloud Users from backend /api/v1/auth/users
+        if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+          for (const cu of cloudUsers) {
+            const normUsername = (cu.username || '').toLowerCase().trim();
+            if (!normUsername) continue;
+
+            const normRole = cu.role === 'ROLE_PATIENT' ? 'Patient'
+              : cu.role === 'ROLE_DOCTOR' ? 'Doctor'
+              : cu.role === 'ROLE_ADMIN' ? 'Administrator'
+              : (cu.role ? cu.role.replace(/^ROLE_/, '') : 'Patient');
+
+            const normRoleLabel = normRole === 'Patient' ? 'Patient'
+              : normRole === 'Doctor' ? 'Doctor / Physician'
+              : 'System Administrator';
+
+            // Find matching patient record
+            const patientPool = finalPatientsList.length > 0 ? finalPatientsList : (loadStorage(STORAGE_KEY_PATIENTS, []) || []);
+            const matchPatient = patientPool.find(p => 
+              (p.username && p.username.toLowerCase() === normUsername) ||
+              (p.phone && cu.phone && p.phone === cu.phone) ||
+              (p.fullName && cu.fullName && p.fullName.toLowerCase() === cu.fullName.toLowerCase()) ||
+              (p.firstName && cu.fullName && p.firstName.toLowerCase() === cu.fullName.toLowerCase())
+            );
+
+            const formattedUser = {
+              id: cu.id,
+              name: cu.fullName || cu.username,
+              fullName: cu.fullName || cu.username,
+              username: cu.username,
+              password: cu.password || cu.passwordHash || 'password123',
+              email: cu.email || `${normUsername}@careconnect.org`,
+              phone: cu.phone || matchPatient?.phone || '',
+              role: normRole,
+              roleLabel: normRoleLabel,
+              department: cu.department || (normRole === 'Patient' ? 'Outpatient' : 'Hospital Operations'),
+              status: cu.active !== false ? 'Active' : 'Inactive',
+              lastLogin: cu.createdAt ? new Date(cu.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Cloud Synced',
+              patientId: matchPatient ? matchPatient.id : (normRole === 'Patient' ? cu.id : undefined),
+              mrn: matchPatient ? matchPatient.mrn : undefined,
+              dateOfBirth: matchPatient?.dateOfBirth,
+              age: matchPatient?.age,
+            };
+
+            const existingIdx = updatedUsers.findIndex(u => 
+              (u.username && u.username.toLowerCase() === normUsername) ||
+              (u.email && cu.email && u.email.toLowerCase() === cu.email.toLowerCase())
+            );
+
+            if (existingIdx !== -1) {
+              updatedUsers[existingIdx] = {
+                ...updatedUsers[existingIdx],
+                ...formattedUser,
+                password: formattedUser.password || updatedUsers[existingIdx].password,
+                mrn: formattedUser.mrn || updatedUsers[existingIdx].mrn,
+                patientId: formattedUser.patientId || updatedUsers[existingIdx].patientId,
+                name: formattedUser.name || updatedUsers[existingIdx].name,
+                fullName: formattedUser.fullName || updatedUsers[existingIdx].fullName,
+              };
+            } else {
+              updatedUsers.push(formattedUser);
+            }
+          }
         }
-      } catch (e) {}
-    };
-    syncCloudData();
-    return () => { isMounted = false; };
+
+        // B. Ensure EVERY registered patient in Master Patient Index is also in systemUsers
+        const patientPool = finalPatientsList.length > 0 ? finalPatientsList : (loadStorage(STORAGE_KEY_PATIENTS, []) || []);
+        for (const p of patientPool) {
+          if (!p.mrn || deletedMrnSet.has(p.mrn.toLowerCase())) continue;
+          const pName = p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Patient';
+          const pUsername = (p.username || p.firstName || '').toLowerCase().replace(/[^a-z0-9]/g, '') || `patient_${p.id}`;
+
+          const userExists = updatedUsers.some(u => 
+            (u.mrn && u.mrn.toLowerCase() === p.mrn.toLowerCase()) ||
+            (u.patientId && Number(u.patientId) === Number(p.id)) ||
+            (u.username && u.username.toLowerCase() === pUsername) ||
+            (p.phone && u.phone && u.phone === p.phone)
+          );
+
+          if (!userExists) {
+            updatedUsers.push({
+              id: 8000 + (Number(p.id) || Math.floor(Math.random() * 1000)),
+              name: pName,
+              fullName: pName,
+              username: pUsername,
+              password: 'Patient#2026',
+              email: p.email || `${pUsername}@careconnect.org`,
+              phone: p.phone,
+              role: 'Patient',
+              roleLabel: 'Patient',
+              department: 'Outpatient',
+              status: 'Active',
+              lastLogin: 'Registered',
+              patientId: p.id,
+              mrn: p.mrn,
+              dateOfBirth: p.dateOfBirth,
+              age: p.age,
+            });
+          }
+        }
+
+        return updatedUsers;
+      });
+    } catch (e) {
+      console.warn('Backend sync failed or offline:', e);
+    } finally {
+      setIsSyncing(false);
+    }
   }, []);
+
+  // Sync to backend on mount, window focus, visibility change, and periodic intervals
+  useEffect(() => {
+    syncCloudData();
+
+    const handleFocus = () => {
+      syncCloudData();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncCloudData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Background sync polling every 25 seconds
+    const interval = setInterval(() => {
+      syncCloudData();
+    }, 25000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [syncCloudData]);
 
   // Selected Patient - dynamically resolves to logged-in patient if in Patient Portal!
   const [selectedPatientId, setSelectedPatientId] = useState(() => {
@@ -2277,6 +2441,8 @@ export const EhrProvider = ({ children }) => {
         auditLogs,
         toast,
         showToast,
+        syncCloudData,
+        isSyncing,
       }}
     >
       {children}

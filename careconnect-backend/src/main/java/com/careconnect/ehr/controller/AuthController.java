@@ -104,15 +104,21 @@ public class AuthController {
         }
         User saved = userRepository.save(user);
 
-        // Also create entry in Master Patient Index
+        // Also create entry in Master Patient Index if not already present
         try {
-            String mrn = "MRN-2026-" + String.format("%04d", (int)(Math.random() * 9000 + 1000));
-            String fullName = user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getUsername();
-            String[] parts = fullName.split(" ", 2);
-            String first = parts[0];
-            String last = parts.length > 1 ? parts[1] : "";
-            Patient p = new Patient(mrn, first, last, java.time.LocalDate.now().minusYears(30), 30, "Other", "O+", user.getPhone() != null ? user.getPhone() : "+1 (555) 000-0000", "Emergency Contact", "None (NKDA)", "Outpatient", "Registered");
-            patientRepository.save(p);
+            boolean alreadyExists = patientRepository.findAll().stream().anyMatch(p -> 
+                (p.getPhone() != null && user.getPhone() != null && p.getPhone().equals(user.getPhone())) ||
+                (p.getFirstName() != null && user.getFullName() != null && p.getFirstName().equalsIgnoreCase(user.getFullName().trim()))
+            );
+            if (!alreadyExists) {
+                String mrn = "MRN-2026-" + String.format("%04d", (int)(Math.random() * 9000 + 1000));
+                String fullName = user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getUsername();
+                String[] parts = fullName.split(" ", 2);
+                String first = parts[0];
+                String last = parts.length > 1 ? parts[1] : "";
+                Patient p = new Patient(mrn, first, last, java.time.LocalDate.now().minusYears(30), 30, "Other", "O+", user.getPhone() != null ? user.getPhone() : "+1 (555) 000-0000", "Emergency Contact", "None (NKDA)", "Outpatient", "Registered");
+                patientRepository.save(p);
+            }
         } catch (Exception ignored) {}
 
         return ResponseEntity.ok(saved);

@@ -164,7 +164,16 @@ export const Navbar = () => {
                     activeTab === 'users' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  User Management
+                  User Credentials & Roles
+                </button>
+                <button
+                  onClick={() => handleTabClick('patients')}
+                  className={`px-3 py-2 rounded-lg transition flex items-center space-x-1.5 ${
+                    activeTab === 'patients' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Master Patient Index (MPI)</span>
                 </button>
                 <button
                   onClick={() => handleTabClick('audit')}
@@ -296,7 +305,14 @@ export const Navbar = () => {
                 onClick={() => handleTabClick('users')}
                 className={`w-full text-left px-3 py-2 rounded-lg ${activeTab === 'users' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600'}`}
               >
-                User Management
+                User Credentials & Roles
+              </button>
+              <button
+                onClick={() => handleTabClick('patients')}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2 ${activeTab === 'patients' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600'}`}
+              >
+                <Users className="w-4 h-4 text-purple-600" />
+                <span>Master Patient Index (MPI)</span>
               </button>
               <button
                 onClick={() => handleTabClick('audit')}

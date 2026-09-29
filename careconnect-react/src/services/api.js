@@ -48,6 +48,17 @@ export const api = {
     }
   },
 
+  // Auth: Get All System Users (Doctors, Staff, and Registered Patients)
+  async getUsers() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/users`, { method: 'GET', headers: defaultHeaders });
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.warn('Backend unavailable, using local users.');
+    }
+    return null;
+  },
+
   // Auth: Login
   async login(username, password) {
     try {
