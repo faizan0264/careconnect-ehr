@@ -4,7 +4,17 @@
 // Gracefully falls back to local clinical state if backend is offline/sleeping
 // ==============================================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+// Auto-detect and normalize environment URL (supports both VITE_API_BASE_URL and VITE_API_URL)
+const getApiBaseUrl = () => {
+  let url = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').trim();
+  url = url.replace(/\/+$/, '');
+  if (!url.endsWith('/api/v1')) {
+    url = `${url}/api/v1`;
+  }
+  return url;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const defaultHeaders = {
   'Content-Type': 'application/json',
