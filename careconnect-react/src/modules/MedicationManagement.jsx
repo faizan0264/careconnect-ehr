@@ -13,6 +13,7 @@ import {
 
 export const MedicationManagement = () => {
   const { 
+    currentUser,
     prescriptions, 
     checkDrugAllergy, 
     prescribeMedication, 
@@ -442,7 +443,7 @@ export const MedicationManagement = () => {
                   className="mt-0.5 rounded text-rose-600 focus:ring-rose-500 h-4 w-4"
                 />
                 <label htmlFor="overrideAgreement" className="text-[11px] text-slate-700 leading-snug cursor-pointer">
-                  I, <strong>Dr. Sarah Smith, MD</strong>, explicitly acknowledge this drug-allergy contraindication and take clinical responsibility for this electronic prescription override.
+                  I, <strong>{currentUser?.fullName || 'Attending Physician'}</strong>, explicitly acknowledge this drug-allergy contraindication and take clinical responsibility for this electronic prescription override.
                 </label>
               </div>
             </div>

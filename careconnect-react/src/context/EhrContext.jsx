@@ -79,8 +79,8 @@ export const EhrProvider = ({ children }) => {
     { id: 105, name: 'Maria Gonzalez', fullName: 'Maria Gonzalez', username: 'maria_g', password: 'password123', email: 'maria.g@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 26, 2026', patientId: 2, mrn: 'MRN-2026-0089' },
     { id: 106, name: 'Hospital Administrator', fullName: 'Hospital Administrator', username: 'admin', password: 'Admin#2026', email: 'admin@careconnect.org', role: 'Administrator', roleLabel: 'System Administrator', department: 'Hospital Administration', status: 'Active', lastLogin: 'Today, 09:00 AM' },
     { id: 107, name: 'Dr. Rajesh Sharma, MD', fullName: 'Dr. Rajesh Sharma, MD', username: 'dr.sharma', password: 'Doctor#2026', email: 'dr.sharma@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Cardiovascular Medicine', status: 'Active', lastLogin: 'Today, 09:30 AM' },
-    { id: 108, name: 'Aisha Patel', fullName: 'Aisha Patel', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 1, mrn: 'MRN-2026-0042' },
-    { id: 109, name: 'Rahul Verma', fullName: 'Rahul Verma', username: 'patient2', password: 'Patient#2026', email: 'rahul.verma@example.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 27, 2026', patientId: 2, mrn: 'MRN-2026-0089' },
+    { id: 108, name: 'Aisha Patel', fullName: 'Aisha Patel', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 4, mrn: 'MRN-2026-0077' },
+    { id: 109, name: 'Rahul Verma', fullName: 'Rahul Verma', username: 'patient2', password: 'Patient#2026', email: 'rahul.verma@example.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 27, 2026', patientId: 5, mrn: 'MRN-2026-0088' },
     { id: 110, name: 'Robert Chen', fullName: 'Robert Chen', username: 'robert_c', password: 'password123', email: 'robert.chen@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 25, 2026', patientId: 3, mrn: 'MRN-2026-0104' },
   ];
 
@@ -145,6 +145,46 @@ export const EhrProvider = ({ children }) => {
       room: 'Completed',
       status: 'Discharged',
       registeredDate: 'Sep 25, 2026',
+    },
+    {
+      id: 4,
+      mrn: 'MRN-2026-0077',
+      firstName: 'Aisha',
+      lastName: 'Patel',
+      fullName: 'Aisha Patel',
+      username: 'patient1',
+      email: 'patient1@careconnect.org',
+      dateOfBirth: '1992-03-15',
+      age: 34,
+      gender: 'Female',
+      bloodGroup: 'B+',
+      phone: '+1 (555) 345-6789',
+      contactPhone: '+1 (555) 345-6789',
+      allergies: 'None (NKDA)',
+      emergencyContact: 'Sanjay Patel (Brother) - +1 (555) 345-6780',
+      room: 'Outpatient Suite',
+      status: 'Active',
+      registeredDate: 'Sep 24, 2026',
+    },
+    {
+      id: 5,
+      mrn: 'MRN-2026-0088',
+      firstName: 'Rahul',
+      lastName: 'Verma',
+      fullName: 'Rahul Verma',
+      username: 'patient2',
+      email: 'rahul.verma@example.com',
+      dateOfBirth: '1988-10-30',
+      age: 37,
+      gender: 'Male',
+      bloodGroup: 'AB+',
+      phone: '+1 (555) 789-0123',
+      contactPhone: '+1 (555) 789-0123',
+      allergies: 'Latex',
+      emergencyContact: 'Pooja Verma (Spouse) - +1 (555) 789-0120',
+      room: 'Outpatient Clinic',
+      status: 'Active',
+      registeredDate: 'Sep 27, 2026',
     }
   ];
 
@@ -344,7 +384,13 @@ export const EhrProvider = ({ children }) => {
 
   // Sync state to local storage
   useEffect(() => {
-    saveStorage(STORAGE_KEY_AUTH, { isAuthenticated, currentUser, activeTab });
+    if (isAuthenticated && currentUser) {
+      saveStorage(STORAGE_KEY_AUTH, { isAuthenticated, currentUser, activeTab });
+    } else {
+      try {
+        localStorage.removeItem(STORAGE_KEY_AUTH);
+      } catch (e) {}
+    }
   }, [isAuthenticated, currentUser, activeTab]);
 
   useEffect(() => {
@@ -621,6 +667,14 @@ export const EhrProvider = ({ children }) => {
     setIsAuthenticated(true);
     setActiveTab('overview');
 
+    // If logging in as doctor, synchronize encounter doctor identity
+    if (user.role === 'ROLE_DOCTOR') {
+      setEncounter(prev => ({
+        ...prev,
+        doctor: user.fullName,
+      }));
+    }
+
     // If logging in as patient, update selectedPatientId to match their patient record!
     if (user.role === 'ROLE_PATIENT') {
       const match = patients.find(p => 
@@ -741,6 +795,8 @@ export const EhrProvider = ({ children }) => {
   // Auth: Logout
   const logout = () => {
     setIsAuthenticated(false);
+    setCurrentUser(defaultPersonas.ROLE_DOCTOR);
+    setSelectedPatientId(1);
     try {
       localStorage.removeItem(STORAGE_KEY_AUTH);
     } catch (e) {}
@@ -992,6 +1048,7 @@ export const EhrProvider = ({ children }) => {
   const signEncounter = () => {
     setEncounter(prev => ({
       ...prev,
+      doctor: currentUser?.fullName || prev.doctor,
       status: 'Completed',
       isSigned: true,
       signedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -1314,13 +1371,11 @@ export const EhrProvider = ({ children }) => {
       return remaining;
     });
 
-    // 2. Remove matching user account from systemUsers
+    // 2. Remove matching user account from systemUsers (strict match by patientId or target username)
     setSystemUsers(prev => prev.filter(u => 
       u.patientId !== patientId &&
       u.id !== patientId &&
-      (targetPatient.mrn ? u.mrn !== targetPatient.mrn : true) &&
-      (targetPatient.username ? (u.username || '').toLowerCase() !== targetPatient.username.toLowerCase() : true) &&
-      (targetPatient.fullName ? (u.name || '').toLowerCase() !== targetPatient.fullName.toLowerCase() : true)
+      (targetPatient.username ? (u.username || '').toLowerCase() !== targetPatient.username.toLowerCase() : true)
     ));
 
     // 3. Remove appointments
@@ -1512,6 +1567,28 @@ export const EhrProvider = ({ children }) => {
     showToast('Medical report removed.', 'info');
   };
 
+  // Self-Healing: Reset all system users, patients, and clinical records to clean factory defaults
+  const resetDemoData = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY_USERS);
+      localStorage.removeItem(STORAGE_KEY_PATIENTS);
+      localStorage.removeItem(STORAGE_KEY_DELETED_PATIENTS);
+      localStorage.removeItem(STORAGE_KEY_APPOINTMENTS);
+      localStorage.removeItem(STORAGE_KEY_AUDIT);
+      localStorage.removeItem(STORAGE_KEY_REPORTS);
+      localStorage.removeItem(STORAGE_KEY_AUTH);
+    } catch (e) {}
+    setSystemUsers(initialSystemUsers);
+    setPatients(initialPatients);
+    setAppointments(initialAppointments);
+    setAuditLogs(initialAuditLogs);
+    setReports(initialReports);
+    setCurrentUser(defaultPersonas.ROLE_DOCTOR);
+    setSelectedPatientId(1);
+    setIsAuthenticated(false);
+    showToast('System demo data successfully restored to factory defaults.', 'success');
+  };
+
   return (
     <EhrContext.Provider
       value={{
@@ -1523,6 +1600,7 @@ export const EhrProvider = ({ children }) => {
         login,
         signup,
         logout,
+        resetDemoData,
         patients,
         selectedPatient,
         setSelectedPatientId,

@@ -30,6 +30,7 @@ import {
 
 export const DoctorDashboard = () => {
   const { 
+    currentUser,
     activeTab, 
     setActiveTab, 
     patients, 
@@ -225,16 +226,50 @@ export const DoctorDashboard = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       
-      {/* Pinned Patient Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 font-bold flex items-center justify-center border border-blue-200">
-            {selectedPatient.lastName[0]}{selectedPatient.firstName[0]}
+      {/* Attending Physician Session Banner */}
+      <div className="bg-linear-to-r from-blue-700 via-blue-800 to-indigo-900 rounded-2xl p-4 sm:p-5 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3.5">
+          <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shrink-0">
+            <Stethoscope className="w-6 h-6 text-blue-200" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-base sm:text-lg font-bold tracking-tight text-white">
+                {currentUser?.fullName || 'Dr. Sarah Smith, MD'}
+              </span>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/40 border border-blue-400/50 text-blue-100 uppercase tracking-wider">
+                Attending Physician
+              </span>
+            </div>
+            <p className="text-xs text-blue-200/90 mt-0.5">
+              {currentUser?.department || 'Internal Medicine & Pulmonology'} • Provider ID: <span className="font-mono text-white/90">{currentUser?.username || 'dr_smith'}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 text-xs">
+          <div className="bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/15">
+            <span className="text-blue-200 text-[10px] block uppercase font-semibold">In-Care Patient Chart</span>
+            <span className="font-bold text-white truncate max-w-[200px] block">
+              {selectedPatient?.lastName}, {selectedPatient?.firstName}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Pinned Patient Record Banner */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 font-bold flex items-center justify-center border border-blue-200 shrink-0">
+            {(selectedPatient?.lastName || 'P')[0]}{(selectedPatient?.firstName || 'P')[0]}
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                Patient Record
+              </span>
               <span className="font-bold text-slate-900 text-sm">
-                {selectedPatient.lastName}, {selectedPatient.firstName}
+                Patient: {selectedPatient.lastName}, {selectedPatient.firstName}
               </span>
               <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded">
                 {selectedPatient.mrn}
@@ -295,7 +330,9 @@ export const DoctorDashboard = () => {
                 <Calendar className="w-4 h-4 text-blue-600" />
                 <span className="text-xs font-bold uppercase text-slate-800">Clinic Appointment & Consultation Queue</span>
               </div>
-              <span className="text-[11px] text-slate-400 font-medium">Attending: Dr. Sarah Smith, MD</span>
+              <span className="text-[11px] text-slate-500 font-medium">
+                Attending Physician: <strong className="text-slate-800 font-semibold">{currentUser?.fullName || 'Dr. Sarah Smith, MD'}</strong>
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
@@ -495,7 +532,7 @@ export const DoctorDashboard = () => {
                   </button>
                 ) : (
                   <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-lg font-bold">
-                    ✓ Signed at {encounter.signedAt}
+                    ✓ Signed by {encounter.doctor || currentUser?.fullName || 'Attending Physician'} at {encounter.signedAt}
                   </span>
                 )}
               </div>

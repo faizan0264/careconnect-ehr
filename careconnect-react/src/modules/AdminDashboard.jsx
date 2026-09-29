@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useEhr } from '../context/EhrContext';
-import { Shield, Users, FileText, ScrollText, CheckCircle2, Activity, UserPlus, Search, Filter, X, Trash2, AlertTriangle, KeyRound, Eye, EyeOff, Lock, Edit3 } from 'lucide-react';
+import { Shield, Users, FileText, ScrollText, CheckCircle2, Activity, UserPlus, Search, Filter, X, Trash2, AlertTriangle, KeyRound, Eye, EyeOff, Lock, Edit3, RotateCcw } from 'lucide-react';
 
 export const AdminDashboard = () => {
-  const { patients, encounter, orders, prescriptions, systemUsers, addSystemUser, removeSystemUser, adminUpdateUser, currentUser, auditLogs, activeTab } = useEhr();
+  const { patients, encounter, orders, prescriptions, systemUsers, addSystemUser, removeSystemUser, adminUpdateUser, currentUser, auditLogs, activeTab, resetDemoData } = useEhr();
 
-  // Local state for staff modal, delete modal, edit modal, and audit log filter
+  // Local state for staff modal, delete modal, edit modal, reset modal, and audit log filter
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [newUser, setNewUser] = useState({ 
     name: '', 
@@ -103,7 +104,16 @@ export const AdminDashboard = () => {
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <span className="font-bold text-slate-800 uppercase text-xs block">Staff & User Directory</span>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(true)}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
+                  title="Reset Demo Data: Restore original clean accounts & patients"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Reset Demo Data</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowCredentials(!showCredentials)}
@@ -213,7 +223,17 @@ export const AdminDashboard = () => {
               <span className="font-bold text-slate-800 uppercase block">Manage System Credentials & Roles</span>
               <p className="text-slate-500 text-[11px] mt-0.5">RBAC Access Provisioning for Doctors, Nurses, and Staff</p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 transition"
+                title="Reset Demo Data: Restore original clean accounts & patients"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                <span>Reset Demo Data</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowCredentials(!showCredentials)}
@@ -683,6 +703,53 @@ export const AdminDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRM FACTORY DEMO DATA RESET */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-200 text-xs animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="font-bold text-sm text-slate-900">Restore Clean Factory Defaults</h3>
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                This will reset all user credentials, patients (MPI), appointments, and clinical data to fresh, consistent system defaults (<strong className="text-slate-800">Dr. Sarah Smith, MD</strong>, <strong className="text-slate-800">Alex Morgan</strong>, <strong className="text-slate-800">John Doe</strong>, and verified accounts).
+              </p>
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] space-y-1">
+              <div className="font-bold">What this fixes:</div>
+              <ul className="list-disc list-inside space-y-0.5 text-amber-800">
+                <li>Clears corrupted or renamed session profiles</li>
+                <li>Restores all standard demo patients and providers</li>
+                <li>Ensures all login tabs and dashboards match 100%</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  resetDemoData();
+                }}
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shadow-sm transition"
+              >
+                Confirm Reset Defaults
+              </button>
+            </div>
           </div>
         </div>
       )}
