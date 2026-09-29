@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEhr } from '../context/EhrContext';
+import { useEhr, calculateAgeFromDob } from '../context/EhrContext';
 import { AlertTriangle, CheckCircle2, User, Droplet, MapPin } from 'lucide-react';
 
 export const PatientHeader = () => {
@@ -33,7 +33,7 @@ export const PatientHeader = () => {
 
                 {/* Age & Gender */}
                 <span className="text-[11px] font-semibold px-1.5 py-0.5 bg-sky-50 text-sky-800 rounded border border-sky-200">
-                  {activePatient.age}y • {activePatient.gender}
+                  {(activePatient.dateOfBirth ? calculateAgeFromDob(activePatient.dateOfBirth, activePatient.age) : activePatient.age) || 30}y • {activePatient.gender}
                 </span>
 
                 {/* Blood Type */}

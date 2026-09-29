@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useEhr } from '../context/EhrContext';
+import { useEhr, calculateAgeFromDob } from '../context/EhrContext';
 import { MedicalReportVaultModal } from '../components/MedicalReportVaultModal';
 import { 
   Users, 
@@ -301,7 +301,7 @@ export const DoctorDashboard = () => {
                 {selectedPatient?.mrn || 'N/A'}
               </span>
               <span className="text-xs text-slate-500">
-                {selectedPatient?.age || 30}y • {selectedPatient?.gender || 'Unknown'} • Type {selectedPatient?.bloodGroup || 'O+'}
+                {(selectedPatient?.dateOfBirth ? calculateAgeFromDob(selectedPatient.dateOfBirth, selectedPatient.age) : selectedPatient?.age) || 30}y • {selectedPatient?.gender || 'Unknown'} • Type {selectedPatient?.bloodGroup || 'O+'}
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-0.5">
@@ -474,7 +474,9 @@ export const DoctorDashboard = () => {
                     >
                       <td className="px-5 py-3.5 font-mono font-bold text-blue-600">{p.mrn}</td>
                       <td className="px-5 py-3.5 font-bold text-slate-800">{p.lastName}, {p.firstName}</td>
-                      <td className="px-5 py-3.5 text-slate-600">{p.age}y • {p.gender}</td>
+                      <td className="px-5 py-3.5 text-slate-600">
+                        {(p.dateOfBirth ? calculateAgeFromDob(p.dateOfBirth, p.age) : p.age) || 30}y • {p.gender}
+                      </td>
                       <td className="px-5 py-3.5">
                         {p.allergies && !p.allergies.includes('NKDA') ? (
                           <span className="text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[11px] font-semibold">
@@ -1238,9 +1240,7 @@ export const DoctorDashboard = () => {
                     value={newPatient.dateOfBirth}
                     onChange={(e) => {
                       const dobVal = e.target.value;
-                      const birthYear = new Date(dobVal).getFullYear();
-                      const currYear = new Date().getFullYear();
-                      setNewPatient({ ...newPatient, dateOfBirth: dobVal, age: Math.max(1, currYear - birthYear) });
+                      setNewPatient({ ...newPatient, dateOfBirth: dobVal, age: calculateAgeFromDob(dobVal, newPatient.age || 30) });
                     }}
                     className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />

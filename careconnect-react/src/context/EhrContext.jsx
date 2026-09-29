@@ -39,6 +39,69 @@ const saveStorage = (key, data) => {
   } catch (e) {}
 };
 
+export const calculateAgeFromDob = (dobString, fallback = 30) => {
+  if (!dobString && dobString !== 0) return fallback;
+  if (typeof dobString === 'number') return dobString;
+
+  const str = String(dobString).trim();
+  let birthYear, birthMonth, birthDay;
+
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        birthYear = parseInt(parts[0], 10);
+        birthMonth = parseInt(parts[1], 10) - 1;
+        birthDay = parseInt(parts[2], 10);
+      } else if (parts[2].length === 4) {
+        // DD-MM-YYYY or MM-DD-YYYY
+        birthYear = parseInt(parts[2], 10);
+        birthMonth = parseInt(parts[1], 10) - 1;
+        birthDay = parseInt(parts[0], 10);
+      }
+    }
+  } else if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      if (parts[2].length === 4) {
+        // M/D/YYYY or MM/DD/YYYY or DD/MM/YYYY
+        birthYear = parseInt(parts[2], 10);
+        birthMonth = parseInt(parts[0], 10) - 1;
+        birthDay = parseInt(parts[1], 10);
+      } else if (parts[0].length === 4) {
+        birthYear = parseInt(parts[0], 10);
+        birthMonth = parseInt(parts[1], 10) - 1;
+        birthDay = parseInt(parts[2], 10);
+      }
+    }
+  }
+
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  const currentDay = today.getDate();
+
+  if (birthYear && !isNaN(birthYear) && birthYear > 1900 && birthYear <= currentYear) {
+    let age = currentYear - birthYear;
+    if (birthMonth !== undefined && !isNaN(birthMonth)) {
+      if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < (birthDay || 1))) {
+        age--;
+      }
+    }
+    return Math.max(0, age);
+  }
+
+  const birth = new Date(dobString);
+  if (isNaN(birth.getTime())) return fallback;
+  let computedAge = currentYear - birth.getFullYear();
+  const m = currentMonth - birth.getMonth();
+  if (m < 0 || (m === 0 && currentDay < birth.getDate())) {
+    computedAge--;
+  }
+  return computedAge >= 0 ? computedAge : fallback;
+};
+
 export const EhrProvider = ({ children }) => {
   // Three Core Default Personas
   const defaultPersonas = {
@@ -367,12 +430,14 @@ export const EhrProvider = ({ children }) => {
           if (match) {
             syncedPatients.push({
               ...match,
+              age: match.dateOfBirth ? calculateAgeFromDob(match.dateOfBirth, match.age || 30) : (match.age || 30),
               fullName: user.name || user.fullName || match.fullName,
               username: user.username || match.username,
               email: user.email || match.email,
             });
           } else {
             const parts = (user.name || user.fullName || 'Patient User').split(' ');
+            const seedDob = '1985-04-12';
             syncedPatients.push({
               id: user.patientId || user.id || Date.now(),
               mrn: user.mrn || `MRN-2026-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -381,8 +446,8 @@ export const EhrProvider = ({ children }) => {
               fullName: user.name || user.fullName || 'Patient User',
               username: user.username,
               email: user.email,
-              dateOfBirth: '1985-04-12',
-              age: 40,
+              dateOfBirth: seedDob,
+              age: calculateAgeFromDob(seedDob, 40),
               gender: 'Male',
               bloodGroup: 'O+',
               phone: user.phone || '+1 (555) 234-5678',
@@ -397,13 +462,21 @@ export const EhrProvider = ({ children }) => {
         }
         
         if (syncedPatients.length > 0) {
-          const unmapped = patientPool.filter(p => !syncedPatients.some(sp => sp.id === p.id || (p.mrn && sp.mrn && sp.mrn.toLowerCase() === p.mrn.toLowerCase())));
+          const unmapped = patientPool
+            .filter(p => !syncedPatients.some(sp => sp.id === p.id || (p.mrn && sp.mrn && sp.mrn.toLowerCase() === p.mrn.toLowerCase())))
+            .map(p => ({
+              ...p,
+              age: p.dateOfBirth ? calculateAgeFromDob(p.dateOfBirth, p.age || 30) : (p.age || 30),
+            }));
           return [...syncedPatients, ...unmapped];
         }
       }
     }
     
-    return patientPool;
+    return patientPool.map(p => ({
+      ...p,
+      age: p.dateOfBirth ? calculateAgeFromDob(p.dateOfBirth, p.age || 30) : (p.age || 30),
+    }));
   });
 
   const [appointments, setAppointments] = useState(() => loadStorage(STORAGE_KEY_APPOINTMENTS, initialAppointments));
@@ -452,11 +525,17 @@ export const EhrProvider = ({ children }) => {
         if (isMounted && Array.isArray(cloudPatients) && cloudPatients.length > 0) {
           setPatients(prev => {
             const existingMrns = new Set(prev.map(p => (p.mrn || '').toLowerCase()));
-            const newOnes = cloudPatients.filter(cp => 
-              cp.mrn && 
-              !existingMrns.has(cp.mrn.toLowerCase()) && 
-              !deletedMrnSet.has(cp.mrn.toLowerCase())
-            );
+            const newOnes = cloudPatients
+              .filter(cp => 
+                cp.mrn && 
+                !existingMrns.has(cp.mrn.toLowerCase()) && 
+                !deletedMrnSet.has(cp.mrn.toLowerCase())
+              )
+              .map(cp => ({
+                ...cp,
+                fullName: cp.fullName || `${cp.firstName || ''} ${cp.lastName || ''}`.trim() || 'Patient',
+                age: cp.dateOfBirth ? calculateAgeFromDob(cp.dateOfBirth, cp.age || 30) : (cp.age || 30),
+              }));
             return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
           });
         }
@@ -491,12 +570,16 @@ export const EhrProvider = ({ children }) => {
         (currentUser.name && p.fullName && p.fullName.toLowerCase() === currentUser.name.toLowerCase()) ||
         (currentUser.phone && p.phone && p.phone === currentUser.phone)
       );
-      if (match) return match;
+      if (match) {
+        const resolvedAge = match.dateOfBirth ? calculateAgeFromDob(match.dateOfBirth, match.age || 30) : (match.age || 30);
+        return { ...match, age: resolvedAge };
+      }
 
       // If registered patient is not yet in the list (e.g. storage sync delay),
       // synthesize patient profile directly from the authenticated currentUser!
       const nameStr = currentUser.fullName || currentUser.name || currentUser.username || 'Patient User';
       const parts = nameStr.split(' ');
+      const userDob = currentUser.dateOfBirth || '1995-01-01';
       return {
         id: currentUser.patientId || currentUser.id || Date.now(),
         mrn: currentUser.mrn || `MRN-2026-${String(currentUser.id || Math.floor(1000 + Math.random() * 9000)).slice(-4)}`,
@@ -505,8 +588,8 @@ export const EhrProvider = ({ children }) => {
         fullName: nameStr,
         username: currentUser.username,
         email: currentUser.email || `${currentUser.username || 'patient'}@careconnect.org`,
-        dateOfBirth: currentUser.dateOfBirth || '1995-01-01',
-        age: currentUser.age || 30,
+        dateOfBirth: userDob,
+        age: calculateAgeFromDob(userDob, currentUser.age || 30),
         gender: currentUser.gender || 'Other',
         bloodGroup: currentUser.bloodGroup || 'O+',
         phone: currentUser.phone || '+1 (555) 000-0000',
@@ -520,7 +603,12 @@ export const EhrProvider = ({ children }) => {
     }
 
     // 2. DOCTOR / ADMIN PORTAL: Resolves to selectedPatientId
-    return list.find(p => Number(p.id) === Number(selectedPatientId)) || list[0] || initialPatients[0];
+    const active = list.find(p => Number(p.id) === Number(selectedPatientId)) || list[0] || initialPatients[0];
+    if (active) {
+      const resolvedAge = active.dateOfBirth ? calculateAgeFromDob(active.dateOfBirth, active.age || 30) : (active.age || 30);
+      return { ...active, age: resolvedAge };
+    }
+    return active;
   }, [patients, selectedPatientId, currentUser]);
 
   // Keep selectedPatientId in sync with the active patient in the patient portal
@@ -1047,6 +1135,8 @@ export const EhrProvider = ({ children }) => {
     const cleanEmail = formData.email.trim();
     const cleanName = formData.fullName.trim();
     const cleanPassword = formData.password ? formData.password.trim() : 'Patient#2026';
+    const cleanDob = formData.dateOfBirth || '1995-01-01';
+    const resolvedAge = calculateAgeFromDob(cleanDob, Number(formData.age) || 30);
 
     const suffix = Math.floor(1000 + Math.random() * 9000);
     const newUserId = Date.now();
@@ -1062,8 +1152,8 @@ export const EhrProvider = ({ children }) => {
       fullName: cleanName,
       username: cleanUsername,
       email: cleanEmail,
-      dateOfBirth: formData.dateOfBirth || '1995-01-01',
-      age: Number(formData.age) || 30,
+      dateOfBirth: cleanDob,
+      age: resolvedAge,
       gender: formData.gender || 'Female',
       bloodGroup: formData.bloodGroup || 'O+',
       phone: formData.phone || '+1 (555) 000-0000',
@@ -1087,6 +1177,8 @@ export const EhrProvider = ({ children }) => {
       department: 'Outpatient Portal',
       patientId: newPatientId,
       mrn: mrn,
+      dateOfBirth: cleanDob,
+      age: resolvedAge,
     };
 
     const updatedPatients = [newPatient, ...patients];
@@ -1106,6 +1198,8 @@ export const EhrProvider = ({ children }) => {
         lastLogin: 'Just now',
         patientId: newPatientId,
         mrn: mrn,
+        dateOfBirth: cleanDob,
+        age: resolvedAge,
       }
     ];
 
@@ -1125,7 +1219,7 @@ export const EhrProvider = ({ children }) => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       user: cleanName,
       action: 'USER_REGISTRATION',
-      details: `New Patient self-registered account: ${cleanName} (Username: ${cleanUsername}, MRN: ${mrn})`
+      details: `New Patient self-registered account: ${cleanName} (Username: ${cleanUsername}, MRN: ${mrn}, Age: ${resolvedAge}y)`
     }, ...prev]);
 
     // 3. Transmit to Spring Boot REST API
@@ -1137,6 +1231,20 @@ export const EhrProvider = ({ children }) => {
         email: cleanEmail,
         phone: formData.phone || '+1 (555) 000-0000',
       });
+      // Also register into backend Master Patient Index with exact date of birth and age
+      await api.registerPatient({
+        firstName: newPatient.firstName,
+        lastName: newPatient.lastName,
+        dateOfBirth: cleanDob,
+        age: resolvedAge,
+        gender: newPatient.gender,
+        bloodGroup: newPatient.bloodGroup,
+        phone: newPatient.phone,
+        emergencyContact: newPatient.emergencyContact,
+        allergies: newPatient.allergies,
+        assignedRoom: newPatient.room,
+        status: 'Admitted',
+      }, 'Patient Self-Registration');
     } catch (err) {
       console.warn('Backend patient registration offline, registered in browser session.');
     }
@@ -1517,7 +1625,7 @@ export const EhrProvider = ({ children }) => {
       lastName: lastName,
       fullName: fullName,
       dateOfBirth: patientData.dateOfBirth || '1995-01-01',
-      age: Number(patientData.age) || 30,
+      age: patientData.dateOfBirth ? calculateAgeFromDob(patientData.dateOfBirth, Number(patientData.age) || 30) : (Number(patientData.age) || 30),
       gender: patientData.gender || 'Female',
       bloodGroup: patientData.bloodGroup || 'O+',
       phone: phone,
@@ -1632,7 +1740,7 @@ export const EhrProvider = ({ children }) => {
         lastName: last,
         fullName: fullName,
         dateOfBirth: userData.dateOfBirth || '1995-01-01',
-        age: Number(userData.age) || 30,
+        age: userData.dateOfBirth ? calculateAgeFromDob(userData.dateOfBirth, Number(userData.age) || 30) : (Number(userData.age) || 30),
         gender: userData.gender || 'Female',
         bloodGroup: userData.bloodGroup || 'O+',
         phone: phone,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEhr } from '../context/EhrContext';
+import { useEhr, calculateAgeFromDob } from '../context/EhrContext';
 import { 
   Stethoscope, 
   User, 
@@ -35,7 +35,7 @@ export const AuthLogin = () => {
   
   // Patient medical fields
   const [dob, setDob] = useState('1995-05-15');
-  const [age, setAge] = useState(31);
+  const [age, setAge] = useState(() => calculateAgeFromDob('1995-05-15'));
   const [gender, setGender] = useState('Female');
   const [bloodGroup, setBloodGroup] = useState('O+');
   const [allergies, setAllergies] = useState('None (NKDA)');
@@ -83,6 +83,8 @@ export const AuthLogin = () => {
       return;
     }
 
+    const computedAge = calculateAgeFromDob(dob, Number(age) || 30);
+
     const res = await signup({
       role: 'ROLE_PATIENT',
       fullName: fullName.trim(),
@@ -91,7 +93,7 @@ export const AuthLogin = () => {
       phone: signupPhone.trim(),
       password: signupPassword.trim(),
       dateOfBirth: dob,
-      age: Number(age) || 30,
+      age: computedAge,
       gender,
       bloodGroup,
       allergies: allergies.trim() || 'None (NKDA)',
@@ -511,11 +513,17 @@ export const AuthLogin = () => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-slate-600 text-[11px] mb-1">Date of Birth</label>
+                    <label className="block text-slate-600 text-[11px] mb-1">
+                      Date of Birth <span className="font-bold text-emerald-600">({calculateAgeFromDob(dob)}y)</span>
+                    </label>
                     <input
                       type="date"
                       value={dob}
-                      onChange={(e) => setDob(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDob(val);
+                        setAge(calculateAgeFromDob(val));
+                      }}
                       className="w-full p-1.5 bg-white text-slate-900 border border-slate-300 rounded-lg text-xs"
                     />
                   </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEhr } from '../context/EhrContext';
+import { useEhr, calculateAgeFromDob } from '../context/EhrContext';
 import { 
   Search, 
   UserPlus, 
@@ -20,7 +20,7 @@ export const PatientDirectory = () => {
     firstName: '',
     lastName: '',
     dateOfBirth: '1992-06-15',
-    age: 34,
+    age: calculateAgeFromDob('1992-06-15'),
     gender: 'FEMALE',
     bloodGroup: 'A+',
     contactPhone: '+1 (555) 345-6789',
@@ -172,7 +172,7 @@ export const PatientDirectory = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {patient.age} yrs • {patient.gender}
+                      {(patient.dateOfBirth ? calculateAgeFromDob(patient.dateOfBirth, patient.age) : patient.age) || 30} yrs • {patient.gender}
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-200">
@@ -259,12 +259,17 @@ export const PatientDirectory = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Date of Birth *</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Date of Birth <span className="text-hospital-600 font-semibold text-xs">({calculateAgeFromDob(formData.dateOfBirth)}y)</span> *
+                  </label>
                   <input
                     type="date"
                     required
                     value={formData.dateOfBirth}
-                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, dateOfBirth: val, age: calculateAgeFromDob(val) });
+                    }}
                     className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-hospital-600 focus:outline-none"
                   />
                 </div>
