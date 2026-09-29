@@ -260,29 +260,82 @@ export const EhrProvider = ({ children }) => {
     const saved = loadStorage(STORAGE_KEY_PATIENTS, null);
     const savedUsers = loadStorage(STORAGE_KEY_USERS, null);
     
-    let basePatients = (saved && Array.isArray(saved) && saved.length > 0) ? saved : initialPatients;
+    // Pool of all known patients (saved + initial)
+    const patientPool = (saved && Array.isArray(saved) && saved.length > 0)
+      ? [...saved, ...initialPatients.filter(ip => !saved.some(sp => sp.id === ip.id || sp.mrn === ip.mrn))]
+      : initialPatients;
     
-    // If the admin has saved custom systemUsers, ensure patients only includes patients that exist in systemUsers
-    if (savedUsers && Array.isArray(savedUsers) && savedUsers.length > 0) {
+    // If systemUsers is saved, synchronize patients directly from the active patient users
+    if (savedUsers && Array.isArray(savedUsers)) {
       const activePatientUsers = savedUsers.filter(u => u.role === 'Patient');
       if (activePatientUsers.length > 0) {
-        const allowedUsernames = new Set(activePatientUsers.map(u => (u.username || '').toLowerCase()));
-        const allowedNames = new Set(activePatientUsers.map(u => (u.name || u.fullName || '').toLowerCase()));
-        const allowedMrns = new Set(activePatientUsers.filter(u => u.mrn).map(u => u.mrn.toLowerCase()));
+        // Unblock active MRNs from deleted storage if they were previously cascaded by accident
+        const activeMrnSet = new Set(activePatientUsers.filter(u => u.mrn).map(u => u.mrn.toLowerCase()));
+        const deletedMrnsList = loadStorage(STORAGE_KEY_DELETED_PATIENTS, []);
+        const cleanedDeleted = deletedMrnsList.filter(m => !activeMrnSet.has(m.toLowerCase()));
+        if (cleanedDeleted.length !== deletedMrnsList.length) {
+          saveStorage(STORAGE_KEY_DELETED_PATIENTS, cleanedDeleted);
+        }
+
+        const syncedPatients = [];
+        const seenKeys = new Set();
         
-        const matched = basePatients.filter(p => 
-          (p.username && allowedUsernames.has(p.username.toLowerCase())) ||
-          (p.mrn && allowedMrns.has(p.mrn.toLowerCase())) ||
-          (p.fullName && allowedNames.has(p.fullName.toLowerCase())) ||
-          (`${p.firstName} ${p.lastName}` && allowedNames.has(`${p.firstName} ${p.lastName}`.toLowerCase()))
-        );
-        if (matched.length > 0) {
-          return matched;
+        for (const user of activePatientUsers) {
+          const key = (user.username || user.name || user.email || '').toLowerCase();
+          if (seenKeys.has(key)) continue;
+          seenKeys.add(key);
+          
+          let match = patientPool.find(p => 
+            (user.patientId && p.id === user.patientId) ||
+            (p.username && user.username && p.username.toLowerCase() === user.username.toLowerCase()) ||
+            (p.fullName && user.name && p.fullName.toLowerCase() === user.name.toLowerCase()) ||
+            (`${p.firstName} ${p.lastName}`.toLowerCase() === (user.name || '').toLowerCase()) ||
+            (user.mrn && p.mrn === user.mrn && (p.fullName?.toLowerCase() === user.name?.toLowerCase() || p.username?.toLowerCase() === user.username?.toLowerCase()))
+          );
+          
+          if (!match && user.mrn) {
+            match = patientPool.find(p => p.mrn === user.mrn);
+          }
+          
+          if (match) {
+            syncedPatients.push({
+              ...match,
+              fullName: user.name || match.fullName,
+              username: user.username || match.username,
+              email: user.email || match.email,
+            });
+          } else {
+            const parts = (user.name || 'Patient User').split(' ');
+            syncedPatients.push({
+              id: user.patientId || user.id || Date.now(),
+              mrn: user.mrn || `MRN-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+              firstName: parts[0] || 'Patient',
+              lastName: parts.slice(1).join(' ') || 'User',
+              fullName: user.name || 'Patient User',
+              username: user.username,
+              email: user.email,
+              dateOfBirth: '1985-04-12',
+              age: 40,
+              gender: 'Male',
+              bloodGroup: 'O+',
+              phone: user.phone || '+1 (555) 234-5678',
+              contactPhone: user.phone || '+1 (555) 234-5678',
+              allergies: 'None (NKDA)',
+              emergencyContact: 'Family Emergency Contact',
+              room: 'Outpatient Clinic',
+              status: 'Active',
+              registeredDate: 'Sep 20, 2026',
+            });
+          }
+        }
+        
+        if (syncedPatients.length > 0) {
+          return syncedPatients;
         }
       }
     }
     
-    return basePatients;
+    return patientPool;
   });
 
   const [appointments, setAppointments] = useState(() => loadStorage(STORAGE_KEY_APPOINTMENTS, initialAppointments));
@@ -1301,23 +1354,15 @@ export const EhrProvider = ({ children }) => {
     // 1. Remove from systemUsers
     setSystemUsers(prev => prev.filter(u => u.id !== userId));
 
-    // 2. If this account is a patient, also remove from patients collection and track deleted MRN
-    if (target.role === 'Patient' || target.patientId || target.mrn) {
-      if (target.mrn) {
-        const deletedMrnsList = loadStorage(STORAGE_KEY_DELETED_PATIENTS, []);
-        if (!deletedMrnsList.includes(target.mrn)) {
-          saveStorage(STORAGE_KEY_DELETED_PATIENTS, [...deletedMrnsList, target.mrn]);
-        }
-      }
-
+    // 2. If this account is a patient, remove ONLY the matching patient record (by username, name, or patientId)
+    if (target.role === 'Patient' || target.patientId) {
       setPatients(prev => {
-        const remaining = prev.filter(p => 
-          p.id !== target.patientId && 
-          p.id !== userId && 
-          (target.mrn ? p.mrn !== target.mrn : true) &&
-          (target.username ? (p.username || '').toLowerCase() !== target.username.toLowerCase() : true) &&
-          (target.name ? (p.fullName || '').toLowerCase() !== target.name.toLowerCase() : true)
-        );
+        const remaining = prev.filter(p => {
+          const isSameId = target.patientId && p.id === target.patientId;
+          const isSameUsername = target.username && p.username && p.username.toLowerCase() === target.username.toLowerCase();
+          const isSameName = target.name && p.fullName && p.fullName.toLowerCase() === target.name.toLowerCase();
+          return !(isSameId || isSameUsername || isSameName);
+        });
         if (remaining.length > 0 && !remaining.some(p => p.id === selectedPatientId)) {
           setSelectedPatientId(remaining[0].id);
         }
@@ -1325,8 +1370,8 @@ export const EhrProvider = ({ children }) => {
       });
 
       setAppointments(prev => prev.filter(a => 
-        a.patientId !== target.patientId && 
-        a.patientName !== target.name
+        (target.patientId ? a.patientId !== target.patientId : true) && 
+        (target.name ? a.patientName !== target.name : true)
       ));
     }
 
