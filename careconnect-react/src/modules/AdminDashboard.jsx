@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useEhr } from '../context/EhrContext';
-import { Shield, Users, FileText, ScrollText, CheckCircle2, Activity, UserPlus, Search, Filter, X, Trash2, AlertTriangle, KeyRound, Eye, EyeOff, Lock } from 'lucide-react';
+import { Shield, Users, FileText, ScrollText, CheckCircle2, Activity, UserPlus, Search, Filter, X, Trash2, AlertTriangle, KeyRound, Eye, EyeOff, Lock, Edit3 } from 'lucide-react';
 
 export const AdminDashboard = () => {
-  const { patients, encounter, orders, prescriptions, systemUsers, addSystemUser, removeSystemUser, currentUser, auditLogs, activeTab } = useEhr();
+  const { patients, encounter, orders, prescriptions, systemUsers, addSystemUser, removeSystemUser, adminUpdateUser, currentUser, auditLogs, activeTab } = useEhr();
 
-  // Local state for staff modal, delete modal, and audit log filter
+  // Local state for staff modal, delete modal, edit modal, and audit log filter
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
   const [showCredentials, setShowCredentials] = useState(false);
   const [newUser, setNewUser] = useState({ 
@@ -241,20 +242,28 @@ export const AdminDashboard = () => {
                       <span className="text-emerald-700 font-bold text-[11px]">● Active</span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {u.email === currentUser.email || u.name === currentUser.fullName ? (
-                        <span className="text-[10px] text-purple-600 font-semibold italic bg-purple-50 px-2 py-0.5 rounded">
-                          Active Admin
-                        </span>
-                      ) : (
+                      <div className="flex items-center justify-end space-x-1.5">
                         <button
-                          onClick={() => setUserToDelete(u)}
-                          className="inline-flex items-center space-x-1 px-2.5 py-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition text-[11px] font-semibold"
-                          title="Remove user account"
+                          type="button"
+                          onClick={() => setEditingUser({ ...u, originalUsername: u.username, originalName: u.name, newPassword: u.password || '' })}
+                          className="inline-flex items-center space-x-1 px-2.5 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition text-[11px] font-semibold border border-blue-200"
+                          title="Edit user name, username, email, or password"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Remove</span>
+                          <Edit3 className="w-3 h-3" />
+                          <span>Edit</span>
                         </button>
-                      )}
+                        {u.email !== currentUser.email && u.name !== currentUser.fullName && (
+                          <button
+                            type="button"
+                            onClick={() => setUserToDelete(u)}
+                            className="inline-flex items-center space-x-1 px-2.5 py-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition text-[11px] font-semibold"
+                            title="Remove user account"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -526,6 +535,114 @@ export const AdminDashboard = () => {
         </div>
       )}
 
+      {/* MODAL: EDIT / RESET USER CREDENTIALS */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-slate-200 text-xs animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b pb-2.5">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Edit User Credentials</h3>
+                  <p className="text-[11px] text-slate-500">Update account name, username, or password</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingUser(null)} className="p-1 rounded-lg text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await adminUpdateUser({
+                  ...editingUser,
+                  password: editingUser.newPassword || editingUser.password,
+                });
+                setEditingUser(null);
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-slate-600 mb-1 font-medium">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingUser.name || editingUser.fullName || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value, fullName: e.target.value })}
+                  className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">Login Username *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.username || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
+                    className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">Password *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUser.newPassword || editingUser.password || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, newPassword: e.target.value, password: e.target.value })}
+                    className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 mb-1 font-medium">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  value={editingUser.email || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 mb-1 font-medium">System Role</label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-xs"
+                >
+                  <option value="Doctor">Doctor</option>
+                  <option value="Patient">Patient</option>
+                  <option value="Nurse">Nurse</option>
+                  <option value="Administrator">Administrator</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition"
+                >
+                  Save Credential Updates
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

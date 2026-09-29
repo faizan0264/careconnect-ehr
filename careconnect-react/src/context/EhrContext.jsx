@@ -245,25 +245,21 @@ export const EhrProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => (savedAuth && savedAuth.currentUser) || defaultPersonas.ROLE_DOCTOR);
   const [activeTab, setActiveTab] = useState(() => (savedAuth && savedAuth.activeTab) || 'overview');
 
-  // Persistent Collections (with seed merging so existing browsers get full user roster)
+  // Persistent Collections (Strictly preserves existing saved user and patient modifications)
   const [systemUsers, setSystemUsers] = useState(() => {
     const saved = loadStorage(STORAGE_KEY_USERS, null);
-    if (!saved || !Array.isArray(saved) || saved.length === 0) {
-      return initialSystemUsers;
+    if (saved && Array.isArray(saved) && saved.length > 0) {
+      return saved;
     }
-    const existing = new Set(saved.map(u => (u.username || '').toLowerCase()));
-    const missing = initialSystemUsers.filter(u => !existing.has((u.username || '').toLowerCase()));
-    return missing.length > 0 ? [...saved, ...missing] : saved;
+    return initialSystemUsers;
   });
 
   const [patients, setPatients] = useState(() => {
     const saved = loadStorage(STORAGE_KEY_PATIENTS, null);
-    if (!saved || !Array.isArray(saved) || saved.length === 0) {
-      return initialPatients;
+    if (saved && Array.isArray(saved) && saved.length > 0) {
+      return saved;
     }
-    const existingMrns = new Set(saved.map(p => p.mrn));
-    const missing = initialPatients.filter(p => !existingMrns.has(p.mrn));
-    return missing.length > 0 ? [...saved, ...missing] : saved;
+    return initialPatients;
   });
 
   const [appointments, setAppointments] = useState(() => loadStorage(STORAGE_KEY_APPOINTMENTS, initialAppointments));
@@ -704,7 +700,53 @@ export const EhrProvider = ({ children }) => {
       return u;
     }));
 
-    // 3. Update personas cache
+    // 3. Update in patients directory so welcome banners, charts, and directories immediately reflect new name
+    setPatients(prev => prev.map(p => {
+      const isMatch = (currentUser.patientId && p.id === currentUser.patientId) ||
+                      (currentUser.mrn && p.mrn === currentUser.mrn) ||
+                      (p.username && p.username.toLowerCase() === oldUsername.toLowerCase()) ||
+                      (p.email && p.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+                      (p.fullName && p.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) ||
+                      (`${p.firstName} ${p.lastName}`.toLowerCase() === currentUser.fullName.toLowerCase());
+      if (isMatch) {
+        const parts = updatedName.split(' ');
+        const first = parts[0] || p.firstName;
+        const last = parts.slice(1).join(' ') || p.lastName;
+        return {
+          ...p,
+          firstName: first,
+          lastName: last,
+          fullName: updatedName,
+          username: updatedUsername,
+          email: updatedEmail,
+        };
+      }
+      return p;
+    }));
+
+    // 4. Update in clinical doctors list if Doctor
+    if (currentUser.role === 'ROLE_DOCTOR') {
+      setDoctorsList(prev => prev.map(d => {
+        if (d.id === currentUser.id || d.name === currentUser.fullName || d.name === updatedName) {
+          return { ...d, name: updatedName };
+        }
+        return d;
+      }));
+      setEncounter(prev => ({ ...prev, doctor: updatedName }));
+    }
+
+    // 5. Update appointment lists
+    setAppointments(prev => prev.map(a => {
+      if (a.patientName === currentUser.fullName) {
+        return { ...a, patientName: updatedName };
+      }
+      if (a.doctorName === currentUser.fullName) {
+        return { ...a, doctorName: updatedName };
+      }
+      return a;
+    }));
+
+    // 6. Update personas cache
     setPersonas(prev => {
       const role = currentUser.role;
       if (prev[role]) {
@@ -721,7 +763,7 @@ export const EhrProvider = ({ children }) => {
       return prev;
     });
 
-    // 4. Send to Backend REST API so Spring Boot & H2 DB persist changes
+    // 7. Send to Backend REST API so Spring Boot & H2 DB persist changes
     try {
       await api.updateProfile({
         userId: currentUser.id,
@@ -736,7 +778,7 @@ export const EhrProvider = ({ children }) => {
       console.warn('Backend profile update failed, updated in browser session.');
     }
 
-    // 5. Log HIPAA audit trail
+    // 8. Log HIPAA audit trail
     setAuditLogs(prev => [{
       id: prev.length + 901,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -747,6 +789,111 @@ export const EhrProvider = ({ children }) => {
 
     showToast('Your username and password have been successfully updated!', 'success');
     return { success: true };
+  };
+
+  // Admin Override: Edit any user's Name, Username, Role, or Password directly
+  const adminUpdateUser = async (targetUser) => {
+    const updatedName = (targetUser.name || targetUser.fullName || '').trim();
+    const updatedUsername = (targetUser.username || '').trim().toLowerCase();
+    const updatedPassword = (targetUser.password || '').trim();
+    const updatedEmail = (targetUser.email || '').trim();
+    const updatedRole = targetUser.role;
+
+    const originalUsername = (targetUser.originalUsername || updatedUsername).toLowerCase();
+    const originalName = targetUser.originalName || updatedName;
+
+    // 1. Update in systemUsers directory
+    setSystemUsers(prev => prev.map(u => {
+      const isTarget = u.id === targetUser.id || 
+                       (u.username && u.username.toLowerCase() === originalUsername);
+      if (isTarget) {
+        return {
+          ...u,
+          name: updatedName,
+          fullName: updatedName,
+          username: updatedUsername,
+          password: updatedPassword || u.password,
+          email: updatedEmail,
+          role: updatedRole || u.role,
+        };
+      }
+      return u;
+    }));
+
+    // 2. If it matches current logged in user, update active session
+    if (currentUser && (currentUser.id === targetUser.id || (currentUser.username && currentUser.username.toLowerCase() === originalUsername))) {
+      setCurrentUser(prev => ({
+        ...prev,
+        fullName: updatedName,
+        username: updatedUsername,
+        email: updatedEmail,
+      }));
+    }
+
+    // 3. If patient, update in patients collection
+    setPatients(prev => prev.map(p => {
+      const isTargetPatient = (targetUser.patientId && p.id === targetUser.patientId) ||
+                              (targetUser.mrn && p.mrn === targetUser.mrn) ||
+                              (p.username && p.username.toLowerCase() === originalUsername) ||
+                              (p.fullName && p.fullName.toLowerCase() === originalName.toLowerCase());
+      if (isTargetPatient) {
+        const parts = updatedName.split(' ');
+        return {
+          ...p,
+          firstName: parts[0] || p.firstName,
+          lastName: parts.slice(1).join(' ') || p.lastName,
+          fullName: updatedName,
+          username: updatedUsername,
+          email: updatedEmail,
+        };
+      }
+      return p;
+    }));
+
+    // 4. If doctor, update in clinic roster
+    if (updatedRole === 'Doctor') {
+      setDoctorsList(prev => prev.map(d => {
+        if (d.id === targetUser.id || d.name === originalName || d.name === updatedName) {
+          return { ...d, name: updatedName };
+        }
+        return d;
+      }));
+    }
+
+    // 5. Update matching appointments
+    setAppointments(prev => prev.map(a => {
+      if (a.patientName === originalName) {
+        return { ...a, patientName: updatedName };
+      }
+      if (a.doctorName === originalName) {
+        return { ...a, doctorName: updatedName };
+      }
+      return a;
+    }));
+
+    // 6. Send to Backend REST API
+    try {
+      await api.updateProfile({
+        userId: targetUser.id,
+        currentUsername: originalUsername,
+        newUsername: updatedUsername,
+        currentPassword: 'password123',
+        newPassword: updatedPassword || null,
+        fullName: updatedName,
+        email: updatedEmail,
+      });
+    } catch (err) {}
+
+    // 7. Audit log
+    setAuditLogs(prev => [{
+      id: prev.length + 901,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      user: currentUser.fullName,
+      action: 'ADMIN_CREDENTIAL_OVERRIDE',
+      details: `Admin updated account for ${updatedUsername} (${updatedName}) - Password modified: ${Boolean(updatedPassword)}`
+    }, ...prev]);
+
+    showToast(`Account for ${updatedName} updated successfully!`, 'success');
   };
 
   // Doctor actions
@@ -1241,6 +1388,7 @@ export const EhrProvider = ({ children }) => {
         addSystemUser,
         removeSystemUser,
         updateAccountCredentials,
+        adminUpdateUser,
         auditLogs,
         toast,
         showToast,
