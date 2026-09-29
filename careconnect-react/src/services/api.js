@@ -4,10 +4,26 @@
 // Gracefully falls back to local clinical state if backend is offline/sleeping
 // ==============================================================================
 
-// Auto-detect and normalize environment URL (supports both VITE_API_BASE_URL and VITE_API_URL)
+// Auto-detect and normalize environment URL (supports VITE_API_BASE_URL, live Render cloud backend, and local fallback)
 const getApiBaseUrl = () => {
-  let url = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').trim();
-  url = url.replace(/\/+$/, '');
+  let rawUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();
+  
+  if (!rawUrl) {
+    if (typeof window !== 'undefined' && window.location) {
+      const host = window.location.hostname;
+      // If deployed on Vercel or any non-localhost host, default to the live Render backend
+      if (host && host !== 'localhost' && host !== '127.0.0.1' && !host.startsWith('192.168.')) {
+        rawUrl = 'https://careconnect-backend-uim9.onrender.com/api/v1';
+      }
+    }
+  }
+
+  // Fallback to local development if not specified
+  if (!rawUrl) {
+    rawUrl = 'http://localhost:8080/api/v1';
+  }
+
+  let url = rawUrl.replace(/\/+$/, '');
   if (!url.endsWith('/api/v1')) {
     url = `${url}/api/v1`;
   }
