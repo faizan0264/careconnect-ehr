@@ -15,6 +15,11 @@ const AppContent = () => {
     return <AuthLogin />;
   }
 
+  const role = currentUser?.role || '';
+  const isDoctor = role === 'ROLE_DOCTOR' || role === 'Doctor';
+  const isPatient = role === 'ROLE_PATIENT' || role === 'Patient';
+  const isAdmin = role === 'ROLE_ADMIN' || role === 'Administrator' || role === 'Admin';
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
       
@@ -33,9 +38,10 @@ const AppContent = () => {
 
       {/* Role-Specific Workspace View */}
       <main className="flex-grow">
-        {currentUser.role === 'ROLE_DOCTOR' && <DoctorDashboard />}
-        {currentUser.role === 'ROLE_PATIENT' && <PatientDashboard />}
-        {currentUser.role === 'ROLE_ADMIN' && <AdminDashboard />}
+        {isDoctor && <DoctorDashboard />}
+        {isPatient && <PatientDashboard />}
+        {isAdmin && <AdminDashboard />}
+        {!isDoctor && !isPatient && !isAdmin && <DoctorDashboard />}
       </main>
 
       {/* Simple Footer */}

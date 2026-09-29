@@ -470,8 +470,9 @@ export const EhrProvider = ({ children }) => {
   // Selected Patient - dynamically resolves to logged-in patient if in Patient Portal!
   const [selectedPatientId, setSelectedPatientId] = useState(1);
   const selectedPatient = useMemo(() => {
-    if (currentUser && currentUser.role === 'ROLE_PATIENT') {
-      const match = patients.find(p => 
+    const list = Array.isArray(patients) && patients.length > 0 ? patients : initialPatients;
+    if (currentUser && (currentUser.role === 'ROLE_PATIENT' || currentUser.role === 'Patient')) {
+      const match = list.find(p => 
         (currentUser.patientId && p.id === currentUser.patientId) ||
         (currentUser.mrn && p.mrn === currentUser.mrn) ||
         (currentUser.username && p.username && p.username.toLowerCase() === currentUser.username.toLowerCase()) ||
@@ -482,7 +483,7 @@ export const EhrProvider = ({ children }) => {
       );
       if (match) return match;
     }
-    return patients.find(p => p.id === selectedPatientId) || patients[0] || initialPatients[0];
+    return list.find(p => p.id === selectedPatientId) || list[0] || initialPatients[0];
   }, [patients, selectedPatientId, currentUser]);
 
   // Initial Clinical Encounters (per-patient baseline)
@@ -739,31 +740,39 @@ export const EhrProvider = ({ children }) => {
   // Dynamically resolve the active patient's encounter
   const encounter = useMemo(() => {
     const pid = selectedPatient?.id || 1;
-    if (encountersMap && encountersMap[pid]) {
-      return encountersMap[pid];
+    const defaultVitals = {
+      bpSystolic: 120,
+      bpDiastolic: 80,
+      heartRate: 72,
+      temp: 98.6,
+      spo2: 99,
+      respRate: 16,
+    };
+    const defaultSoap = {
+      subjective: `Patient ${selectedPatient?.firstName || ''} ${selectedPatient?.lastName || ''} registered in CareConnect clinical portal. Ready for physician documentation.`,
+      objective: 'Baseline initial intake. Vitals documented.',
+      assessment: '1. Routine General Health Examination (Z00.00)',
+      plan: '1. Complete clinical workup and baseline laboratory profiling.\n2. Formulate ongoing care plan.',
+    };
+
+    if (encountersMap && typeof encountersMap === 'object' && encountersMap[pid]) {
+      const e = encountersMap[pid];
+      return {
+        ...e,
+        vitals: { ...defaultVitals, ...(e.vitals || {}) },
+        soap: { ...defaultSoap, ...(e.soap || {}) },
+      };
     }
     return {
       id: 1000 + pid,
       patientId: pid,
       hasEncounter: false,
       date: `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • 10:00 AM`,
-      doctor: currentUser?.role === 'ROLE_DOCTOR' ? currentUser.fullName : 'Dr. Sarah Smith, MD',
+      doctor: (currentUser?.role === 'ROLE_DOCTOR' || currentUser?.role === 'Doctor') ? currentUser.fullName : 'Dr. Sarah Smith, MD',
       status: 'Intake / New',
       chiefComplaint: 'Outpatient clinical intake and preliminary assessment.',
-      vitals: {
-        bpSystolic: 120,
-        bpDiastolic: 80,
-        heartRate: 72,
-        temp: 98.6,
-        spo2: 99,
-        respRate: 16,
-      },
-      soap: {
-        subjective: `Patient ${selectedPatient?.firstName || ''} ${selectedPatient?.lastName || ''} registered in CareConnect clinical portal. Ready for physician documentation.`,
-        objective: 'Baseline initial intake. Vitals documented.',
-        assessment: '1. Routine General Health Examination (Z00.00)',
-        plan: '1. Complete clinical workup and baseline laboratory profiling.\n2. Formulate ongoing care plan.',
-      },
+      vitals: defaultVitals,
+      soap: defaultSoap,
       isSigned: false,
       signedAt: null,
     };

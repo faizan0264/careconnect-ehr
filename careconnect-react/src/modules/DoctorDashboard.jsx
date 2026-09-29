@@ -77,18 +77,29 @@ export const DoctorDashboard = () => {
     room: 'Exam Room 2',
   });
 
-  // Vitals & SOAP local edit states
-  const [vitals, setVitals] = useState(encounter.vitals);
-  const [soap, setSoap] = useState(encounter.soap);
+  // Vitals & SOAP local edit states with safe default fallbacks
+  const defaultVitals = {
+    bpSystolic: 120,
+    bpDiastolic: 80,
+    heartRate: 72,
+    temp: 98.6,
+    spo2: 99,
+    respRate: 16,
+  };
+  const defaultSoap = {
+    subjective: '',
+    objective: '',
+    assessment: '',
+    plan: '',
+  };
+
+  const [vitals, setVitals] = useState(() => encounter?.vitals || defaultVitals);
+  const [soap, setSoap] = useState(() => encounter?.soap || defaultSoap);
 
   // Sync vitals and SOAP whenever selected patient changes
   useEffect(() => {
-    if (encounter?.vitals) {
-      setVitals(encounter.vitals);
-    }
-    if (encounter?.soap) {
-      setSoap(encounter.soap);
-    }
+    setVitals(encounter?.vitals || defaultVitals);
+    setSoap(encounter?.soap || defaultSoap);
   }, [selectedPatient?.id, encounter]);
 
   // CPOE state
@@ -168,7 +179,7 @@ export const DoctorDashboard = () => {
 
     // Check allergy conflict
     const lowerDrug = rxDrug.toLowerCase();
-    const lowerAllergies = selectedPatient.allergies.toLowerCase();
+    const lowerAllergies = (selectedPatient?.allergies || '').toLowerCase();
     if (lowerDrug.includes('amoxicillin') || lowerDrug.includes('penicillin')) {
       if (lowerAllergies.includes('penicillin')) {
         setShowAllergyModal(true);
@@ -266,7 +277,7 @@ export const DoctorDashboard = () => {
           <div className="bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/15">
             <span className="text-blue-200 text-[10px] block uppercase font-semibold">In-Care Patient Chart</span>
             <span className="font-bold text-white truncate max-w-[200px] block">
-              {selectedPatient?.lastName}, {selectedPatient?.firstName}
+              {selectedPatient?.lastName || 'Patient'}, {selectedPatient?.firstName || ''}
             </span>
           </div>
         </div>
@@ -284,27 +295,27 @@ export const DoctorDashboard = () => {
                 Patient Record
               </span>
               <span className="font-bold text-slate-900 text-sm">
-                Patient: {selectedPatient.lastName}, {selectedPatient.firstName}
+                Patient: {selectedPatient?.lastName || 'Patient'}, {selectedPatient?.firstName || ''}
               </span>
               <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded">
-                {selectedPatient.mrn}
+                {selectedPatient?.mrn || 'N/A'}
               </span>
               <span className="text-xs text-slate-500">
-                {selectedPatient.age}y • {selectedPatient.gender} • Type {selectedPatient.bloodGroup}
+                {selectedPatient?.age || 30}y • {selectedPatient?.gender || 'Unknown'} • Type {selectedPatient?.bloodGroup || 'O+'}
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-0.5">
-              Location: {selectedPatient.room} • Status: {selectedPatient.status}
+              Location: {selectedPatient?.room || 'Outpatient Clinic'} • Status: {selectedPatient?.status || 'Active'}
             </div>
           </div>
         </div>
 
         {/* Action Controls & Allergy Indicator */}
         <div className="flex flex-wrap items-center gap-2">
-          {selectedPatient.allergies && !selectedPatient.allergies.includes('NKDA') ? (
+          {selectedPatient?.allergies && !selectedPatient?.allergies?.includes('NKDA') ? (
             <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-              <span>Allergy: {selectedPatient.allergies}</span>
+              <span>Allergy: {selectedPatient?.allergies}</span>
             </div>
           ) : (
             <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-medium">
@@ -513,19 +524,19 @@ export const DoctorDashboard = () => {
                 <div className="flex items-center space-x-1">
                   <input
                     type="number"
-                    value={vitals.bpSystolic}
-                    onChange={(e) => setVitals({ ...vitals, bpSystolic: Number(e.target.value) })}
+                    value={vitals?.bpSystolic ?? 120}
+                    onChange={(e) => setVitals(prev => ({ ...(prev || {}), bpSystolic: Number(e.target.value) }))}
                     className="w-14 px-2 py-1 bg-white text-slate-900 border border-slate-300 rounded font-bold text-center focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
                   <span className="text-slate-500 font-bold">/</span>
                   <input
                     type="number"
-                    value={vitals.bpDiastolic}
-                    onChange={(e) => setVitals({ ...vitals, bpDiastolic: Number(e.target.value) })}
+                    value={vitals?.bpDiastolic ?? 80}
+                    onChange={(e) => setVitals(prev => ({ ...(prev || {}), bpDiastolic: Number(e.target.value) }))}
                     className="w-14 px-2 py-1 bg-white text-slate-900 border border-slate-300 rounded font-bold text-center focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
                 </div>
-                {vitals.bpSystolic >= 140 && (
+                {(vitals?.bpSystolic ?? 120) >= 140 && (
                   <span className="text-[10px] text-rose-600 font-bold block mt-1">⚠️ High BP Alert</span>
                 )}
               </div>
@@ -534,8 +545,8 @@ export const DoctorDashboard = () => {
                 <span className="text-slate-500 block mb-1">Heart Rate (bpm)</span>
                 <input
                   type="number"
-                  value={vitals.heartRate}
-                  onChange={(e) => setVitals({ ...vitals, heartRate: Number(e.target.value) })}
+                  value={vitals?.heartRate ?? 72}
+                  onChange={(e) => setVitals(prev => ({ ...(prev || {}), heartRate: Number(e.target.value) }))}
                   className="w-full px-2 py-1 bg-white text-slate-900 border border-slate-300 rounded font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
@@ -544,8 +555,8 @@ export const DoctorDashboard = () => {
                 <span className="text-slate-500 block mb-1">SpO2 Oxygen (%)</span>
                 <input
                   type="number"
-                  value={vitals.spo2}
-                  onChange={(e) => setVitals({ ...vitals, spo2: Number(e.target.value) })}
+                  value={vitals?.spo2 ?? 99}
+                  onChange={(e) => setVitals(prev => ({ ...(prev || {}), spo2: Number(e.target.value) }))}
                   className="w-full px-2 py-1 bg-white text-slate-900 border border-slate-300 rounded font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
@@ -555,8 +566,8 @@ export const DoctorDashboard = () => {
                 <input
                   type="number"
                   step="0.1"
-                  value={vitals.temp}
-                  onChange={(e) => setVitals({ ...vitals, temp: Number(e.target.value) })}
+                  value={vitals?.temp ?? 98.6}
+                  onChange={(e) => setVitals(prev => ({ ...(prev || {}), temp: Number(e.target.value) }))}
                   className="w-full px-2 py-1 bg-white text-slate-900 border border-slate-300 rounded font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
@@ -597,8 +608,8 @@ export const DoctorDashboard = () => {
                 <span className="font-bold text-blue-700">S — Subjective</span>
                 <textarea
                   rows={3}
-                  value={soap.subjective}
-                  onChange={(e) => setSoap({ ...soap, subjective: e.target.value })}
+                  value={soap?.subjective ?? ''}
+                  onChange={(e) => setSoap(prev => ({ ...(prev || {}), subjective: e.target.value }))}
                   className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
@@ -607,8 +618,8 @@ export const DoctorDashboard = () => {
                 <span className="font-bold text-blue-700">O — Objective</span>
                 <textarea
                   rows={3}
-                  value={soap.objective}
-                  onChange={(e) => setSoap({ ...soap, objective: e.target.value })}
+                  value={soap?.objective ?? ''}
+                  onChange={(e) => setSoap(prev => ({ ...(prev || {}), objective: e.target.value }))}
                   className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
@@ -631,10 +642,10 @@ export const DoctorDashboard = () => {
                       type="button"
                       onClick={() => {
                         const addition = `${diag.label} (${diag.code})`;
-                        setSoap({
-                          ...soap,
-                          assessment: soap.assessment ? `${soap.assessment}\n• ${addition}` : `• ${addition}`
-                        });
+                        setSoap(prev => ({
+                          ...(prev || {}),
+                          assessment: prev?.assessment ? `${prev.assessment}\n• ${addition}` : `• ${addition}`
+                        }));
                       }}
                       className="text-[10px] px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md border border-blue-200 font-medium transition"
                     >
@@ -644,8 +655,8 @@ export const DoctorDashboard = () => {
                 </div>
                 <textarea
                   rows={3}
-                  value={soap.assessment}
-                  onChange={(e) => setSoap({ ...soap, assessment: e.target.value })}
+                  value={soap?.assessment ?? ''}
+                  onChange={(e) => setSoap(prev => ({ ...(prev || {}), assessment: e.target.value }))}
                   className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
@@ -654,8 +665,8 @@ export const DoctorDashboard = () => {
                 <span className="font-bold text-blue-700">P — Plan</span>
                 <textarea
                   rows={3}
-                  value={soap.plan}
-                  onChange={(e) => setSoap({ ...soap, plan: e.target.value })}
+                  value={soap?.plan ?? ''}
+                  onChange={(e) => setSoap(prev => ({ ...(prev || {}), plan: e.target.value }))}
                   className="w-full p-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
@@ -666,7 +677,7 @@ export const DoctorDashboard = () => {
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b pb-2">
               <span className="text-xs font-bold uppercase text-slate-700">Previous Clinical Encounters (Continuity of Care)</span>
-              <span className="text-[11px] text-slate-400 font-medium">{selectedPatient.firstName} {selectedPatient.lastName}</span>
+              <span className="text-[11px] text-slate-400 font-medium">{selectedPatient?.firstName || ''} {selectedPatient?.lastName || ''}</span>
             </div>
 
             <div className="space-y-2 text-xs">

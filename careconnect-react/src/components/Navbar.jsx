@@ -28,7 +28,10 @@ export const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
-  const role = currentUser.role;
+  const role = currentUser?.role || '';
+  const isDoctor = role === 'ROLE_DOCTOR' || role === 'Doctor';
+  const isPatient = role === 'ROLE_PATIENT' || role === 'Patient';
+  const isAdmin = role === 'ROLE_ADMIN' || role === 'Administrator' || role === 'Admin';
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
@@ -44,12 +47,12 @@ export const Navbar = () => {
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-slate-900 text-base">CareConnect</span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  role === 'ROLE_DOCTOR' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  role === 'ROLE_PATIENT' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  isDoctor ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                  isPatient ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                   'bg-purple-50 text-purple-700 border-purple-200'
                 }`}>
-                  {role === 'ROLE_DOCTOR' ? 'Doctor Portal' :
-                   role === 'ROLE_PATIENT' ? 'Patient Portal' : 'Admin Console'}
+                  {isDoctor ? 'Doctor Portal' :
+                   isPatient ? 'Patient Portal' : 'Admin Console'}
                 </span>
               </div>
             </div>
@@ -59,7 +62,7 @@ export const Navbar = () => {
           <nav className="hidden md:flex items-center space-x-1 text-xs font-semibold">
             
             {/* DOCTOR TABS */}
-            {role === 'ROLE_DOCTOR' && (
+            {isDoctor && (
               <>
                 <button
                   onClick={() => handleTabClick('overview')}
@@ -106,7 +109,7 @@ export const Navbar = () => {
             )}
 
             {/* PATIENT TABS */}
-            {role === 'ROLE_PATIENT' && (
+            {isPatient && (
               <>
                 <button
                   onClick={() => handleTabClick('overview')}
@@ -145,7 +148,7 @@ export const Navbar = () => {
             )}
 
             {/* ADMIN TABS */}
-            {role === 'ROLE_ADMIN' && (
+            {isAdmin && (
               <>
                 <button
                   onClick={() => handleTabClick('overview')}
@@ -217,7 +220,7 @@ export const Navbar = () => {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white px-4 py-3 space-y-1 text-sm font-medium">
           
-          {role === 'ROLE_DOCTOR' && (
+          {isDoctor && (
             <>
               <button
                 onClick={() => handleTabClick('overview')}
@@ -252,7 +255,7 @@ export const Navbar = () => {
             </>
           )}
 
-          {role === 'ROLE_PATIENT' && (
+          {isPatient && (
             <>
               <button
                 onClick={() => handleTabClick('overview')}
@@ -281,7 +284,7 @@ export const Navbar = () => {
             </>
           )}
 
-          {role === 'ROLE_ADMIN' && (
+          {isAdmin && (
             <>
               <button
                 onClick={() => handleTabClick('overview')}
