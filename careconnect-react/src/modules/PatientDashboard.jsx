@@ -72,9 +72,10 @@ export const PatientDashboard = () => {
   const isCurrentSlotBusy = occupiedSlots.includes(selectedSlot.trim().toUpperCase());
   const selectedDocObj = doctorsList.find(d => d.id === Number(selectedDoctorId)) || doctorsList[0];
 
-  const activeMeds = prescriptions.filter(p => p.status === 'Active' && (!p.patientId || p.patientId === selectedPatient?.id));
-  const completedOrders = orders.filter(o => o.status === 'Completed' && (!o.patientId || o.patientId === selectedPatient?.id));
-  const patientAppointments = appointments.filter(a => a.patientId === selectedPatient?.id);
+  const activeMeds = prescriptions.filter(p => p.status === 'Active' && Number(p.patientId) === Number(selectedPatient?.id));
+  const completedOrders = orders.filter(o => o.status === 'Completed' && Number(o.patientId) === Number(selectedPatient?.id));
+  const patientOrders = orders.filter(o => Number(o.patientId) === Number(selectedPatient?.id));
+  const patientAppointments = appointments.filter(a => Number(a.patientId) === Number(selectedPatient?.id));
   const patientReports = (reports || []).filter(r => Number(r.patientId) === Number(selectedPatient?.id));
 
   const filteredReports = patientReports.filter(r => {
@@ -220,29 +221,35 @@ export const PatientDashboard = () => {
             </div>
 
             <div className="space-y-2.5 text-xs">
-              {activeMeds.map(m => (
-                <div key={m.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="font-bold text-slate-900">{m.name}</div>
-                    <div className="text-slate-600 font-medium">Dosage: {m.dosage} • {m.frequency}</div>
-                    <div className="text-[11px] text-slate-400">Duration: {m.duration}</div>
+              {activeMeds.length > 0 ? (
+                activeMeds.map(m => (
+                  <div key={m.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-slate-900">{m.name}</div>
+                      <div className="text-slate-600 font-medium">Dosage: {m.dosage} • {m.frequency}</div>
+                      <div className="text-[11px] text-slate-400">Duration: {m.duration}</div>
+                    </div>
+                    <div className="flex-shrink-0 no-print">
+                      {requestedRefills.includes(m.id) ? (
+                        <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-lg">
+                          ⏳ Refill Requested
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleRequestRefill(m.id, m.name)}
+                          className="text-[11px] font-semibold bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded-lg shadow-xs transition"
+                        >
+                          Request Refill
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-shrink-0 no-print">
-                    {requestedRefills.includes(m.id) ? (
-                      <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-lg">
-                        ⏳ Refill Requested
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleRequestRefill(m.id, m.name)}
-                        className="text-[11px] font-semibold bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded-lg shadow-xs transition"
-                      >
-                        Request Refill
-                      </button>
-                    )}
-                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-slate-400">
+                  No active medications currently prescribed.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -254,17 +261,23 @@ export const PatientDashboard = () => {
             </div>
 
             <div className="space-y-2.5 text-xs">
-              {completedOrders.map(o => (
-                <div key={o.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{o.name}</span>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">Fulfilled</span>
+              {completedOrders.length > 0 ? (
+                completedOrders.map(o => (
+                  <div key={o.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900">{o.name}</span>
+                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">Fulfilled</span>
+                    </div>
+                    <p className="text-slate-700 mt-1 leading-relaxed bg-white p-2 rounded-lg border border-slate-200">
+                      {o.result}
+                    </p>
                   </div>
-                  <p className="text-slate-700 mt-1 leading-relaxed bg-white p-2 rounded-lg border border-slate-200">
-                    {o.result}
-                  </p>
+                ))
+              ) : (
+                <div className="p-4 text-center text-slate-400">
+                  No completed diagnostic laboratory or imaging reports yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -278,33 +291,45 @@ export const PatientDashboard = () => {
               <span className="text-xs text-slate-500 font-medium">{encounter.date}</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="font-semibold text-slate-500 block mb-1">Attending Physician</span>
-                <p className="font-bold text-slate-900">{encounter.doctor}</p>
-              </div>
+            {encounter?.hasEncounter ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="font-semibold text-slate-500 block mb-1">Attending Physician</span>
+                    <p className="font-bold text-slate-900">{encounter.doctor}</p>
+                  </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="font-semibold text-slate-500 block mb-1">Visit Reason</span>
-                <p className="font-medium text-slate-800">{encounter.chiefComplaint}</p>
-              </div>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="font-semibold text-slate-500 block mb-1">Visit Reason</span>
+                    <p className="font-medium text-slate-800">{encounter.chiefComplaint}</p>
+                  </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="font-semibold text-slate-500 block mb-1">Vitals Recorded</span>
-                <p className="font-medium text-slate-800">
-                  BP: <strong>{encounter.vitals.bpSystolic}/{encounter.vitals.bpDiastolic}</strong> • Pulse: <strong>{encounter.vitals.heartRate}</strong>
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="font-semibold text-slate-500 block mb-1">Vitals Recorded</span>
+                    <p className="font-medium text-slate-800">
+                      BP: <strong>{encounter.vitals?.bpSystolic}/{encounter.vitals?.bpDiastolic}</strong> • Pulse: <strong>{encounter.vitals?.heartRate} bpm</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200 text-xs">
+                  <span className="font-bold text-blue-900 block mb-1">Doctor's Clinical Assessment & Care Plan</span>
+                  <p className="text-blue-950 font-medium leading-relaxed whitespace-pre-line">
+                    {encounter.soap?.assessment}
+                    {"\n\n"}
+                    {encounter.soap?.plan}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs space-y-1.5">
+                <FileText className="w-6 h-6 text-slate-400 mx-auto" />
+                <p className="font-semibold text-slate-700">No Clinical Encounters Documented Yet</p>
+                <p className="text-slate-500 max-w-md mx-auto">
+                  Your clinical encounter notes, vital signs, and physician care plan will appear here after your healthcare provider documents a medical consultation.
                 </p>
               </div>
-            </div>
-
-            <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200 text-xs">
-              <span className="font-bold text-blue-900 block mb-1">Doctor's Diagnosis & Plan</span>
-              <p className="text-blue-950 font-medium leading-relaxed whitespace-pre-line">
-                {encounter.soap.assessment}
-                {"\n\n"}
-                {encounter.soap.plan}
-              </p>
-            </div>
+            )}
           </div>
 
           {/* Upcoming Appointment & Care Team */}
@@ -479,31 +504,37 @@ export const PatientDashboard = () => {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3 text-xs">
           <h2 className="text-sm font-bold text-slate-900">Your Prescribed Medications</h2>
           <div className="space-y-2">
-            {activeMeds.map(m => (
-              <div key={m.id} className="p-3 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="font-bold text-sm text-slate-900">{m.name}</div>
-                  <div className="text-slate-600">{m.dosage} • {m.frequency} • {m.duration}</div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-bold border border-emerald-200">
-                    Active
-                  </span>
-                  {requestedRefills.includes(m.id) ? (
-                    <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-lg">
-                      ⏳ Refill Requested
+            {activeMeds.length > 0 ? (
+              activeMeds.map(m => (
+                <div key={m.id} className="p-3 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-sm text-slate-900">{m.name}</div>
+                    <div className="text-slate-600">{m.dosage} • {m.frequency} • {m.duration}</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-bold border border-emerald-200">
+                      Active
                     </span>
-                  ) : (
-                    <button
-                      onClick={() => handleRequestRefill(m.id, m.name)}
-                      className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg transition"
-                    >
-                      Request Refill
-                    </button>
-                  )}
+                    {requestedRefills.includes(m.id) ? (
+                      <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-lg">
+                        ⏳ Refill Requested
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleRequestRefill(m.id, m.name)}
+                        className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg transition"
+                      >
+                        Request Refill
+                      </button>
+                    )}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400">
+                No active medications currently prescribed.
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -513,25 +544,31 @@ export const PatientDashboard = () => {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3 text-xs">
           <h2 className="text-sm font-bold text-slate-900">Your Diagnostic Test Results</h2>
           <div className="space-y-3">
-            {orders.map(o => (
-              <div key={o.id} className="p-3.5 border rounded-xl bg-slate-50/50 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-slate-900">{o.name}</span>
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                    o.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                  }`}>
-                    {o.status}
-                  </span>
+            {patientOrders.length > 0 ? (
+              patientOrders.map(o => (
+                <div key={o.id} className="p-3.5 border rounded-xl bg-slate-50/50 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-slate-900">{o.name}</span>
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                      o.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {o.status}
+                    </span>
+                  </div>
+                  {o.result ? (
+                    <p className="bg-white p-2.5 rounded-lg border text-slate-700 leading-relaxed">
+                      {o.result}
+                    </p>
+                  ) : (
+                    <p className="text-slate-400 italic">Specimen currently being processed in laboratory.</p>
+                  )}
                 </div>
-                {o.result ? (
-                  <p className="bg-white p-2.5 rounded-lg border text-slate-700 leading-relaxed">
-                    {o.result}
-                  </p>
-                ) : (
-                  <p className="text-slate-400 italic">Specimen currently being processed in laboratory.</p>
-                )}
+              ))
+            ) : (
+              <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400">
+                No diagnostic test results or laboratory orders documented yet.
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

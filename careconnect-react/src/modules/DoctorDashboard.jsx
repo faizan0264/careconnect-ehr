@@ -107,6 +107,21 @@ export const DoctorDashboard = () => {
   const [overrideReason, setOverrideReason] = useState('Clinical benefit outweighs risk with close monitoring');
   const [overrideAck, setOverrideAck] = useState(false);
 
+  // Doctor appointment schedule filtering
+  const [scheduleFilter, setScheduleFilter] = useState('MY_SCHEDULE');
+  const myAppointments = appointments.filter(a => 
+    a.status !== 'Cancelled' && 
+    (a.doctorName === currentUser?.fullName || a.doctorId === currentUser?.id)
+  );
+  const allClinicAppointments = appointments.filter(a => a.status !== 'Cancelled');
+  const displayedAppointments = scheduleFilter === 'MY_SCHEDULE' 
+    ? (myAppointments.length > 0 ? myAppointments : allClinicAppointments) 
+    : allClinicAppointments;
+
+  // Filter orders and prescriptions strictly by active patient chart
+  const patientOrders = orders.filter(o => Number(o.patientId) === Number(selectedPatient?.id));
+  const patientPrescriptions = prescriptions.filter(p => Number(p.patientId) === Number(selectedPatient?.id));
+
   // Filtered patients
   const filteredPatients = patients.filter(p => 
     p.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -325,44 +340,72 @@ export const DoctorDashboard = () => {
           
           {/* Clinic Appointment Queue */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-2">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4 text-blue-600" />
                 <span className="text-xs font-bold uppercase text-slate-800">Clinic Appointment & Consultation Queue</span>
               </div>
-              <span className="text-[11px] text-slate-500 font-medium">
-                Attending Physician: <strong className="text-slate-800 font-semibold">{currentUser?.fullName || 'Dr. Sarah Smith, MD'}</strong>
-              </span>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold">
+                  <button
+                    onClick={() => setScheduleFilter('MY_SCHEDULE')}
+                    className={`px-2.5 py-1 rounded-md transition ${
+                      scheduleFilter === 'MY_SCHEDULE'
+                        ? 'bg-white text-blue-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    My Schedule ({myAppointments.length})
+                  </button>
+                  <button
+                    onClick={() => setScheduleFilter('ALL_CLINIC')}
+                    className={`px-2.5 py-1 rounded-md transition ${
+                      scheduleFilter === 'ALL_CLINIC'
+                        ? 'bg-white text-blue-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    All Clinic ({allClinicAppointments.length})
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-              {appointments.filter(a => a.status !== 'Cancelled').map(a => (
-                <div
-                  key={a.id}
-                  onClick={() => { setSelectedPatientId(a.patientId); setActiveTab('soap'); }}
-                  className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2 ${
-                    a.patientId === selectedPatient.id
-                      ? 'border-blue-500 bg-blue-50/50 shadow-xs ring-1 ring-blue-500'
-                      : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-sm">{a.patientName}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                      {a.timeSlot}
-                    </span>
+            {displayedAppointments.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                {displayedAppointments.map(a => (
+                  <div
+                    key={a.id}
+                    onClick={() => { setSelectedPatientId(a.patientId); setActiveTab('soap'); }}
+                    className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2 ${
+                      a.patientId === selectedPatient.id
+                        ? 'border-blue-500 bg-blue-50/50 shadow-xs ring-1 ring-blue-500'
+                        : 'border-slate-200 bg-slate-50/50 hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-sm">{a.patientName}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        {a.timeSlot}
+                      </span>
+                    </div>
+                    <div className="text-slate-600 text-[11px]">
+                      <div>{a.mrn} • {a.room}</div>
+                      <div className="text-slate-500 italic mt-0.5 truncate">Reason: {a.reason}</div>
+                      <div className="text-blue-700 font-medium text-[10px] mt-0.5">Physician: {a.doctorName}</div>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
+                      <span className="text-blue-600 font-semibold">{a.date}</span>
+                      <span className="text-blue-700 font-bold hover:underline">Open Chart →</span>
+                    </div>
                   </div>
-                  <div className="text-slate-600 text-[11px]">
-                    <div>{a.mrn} • {a.room}</div>
-                    <div className="text-slate-500 italic mt-0.5 truncate">Reason: {a.reason}</div>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[11px]">
-                    <span className="text-blue-600 font-semibold">{a.date}</span>
-                    <span className="text-blue-700 font-bold hover:underline">Open Chart →</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-500">
+                No scheduled consultations found in this view. Switch to "All Clinic" or select a registered patient below from the Master Patient Index.
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -386,6 +429,17 @@ export const DoctorDashboard = () => {
           </div>
 
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Users className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold uppercase text-slate-800">
+                  Master Patient Index (MPI Directory: {filteredPatients.length} Registered Patients)
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-500">
+                Click any row or button to load their clinical chart & encounter
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500 font-semibold uppercase">
@@ -423,9 +477,9 @@ export const DoctorDashboard = () => {
                       <td className="px-5 py-3.5 text-right">
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelectedPatientId(p.id); setActiveTab('soap'); }}
-                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold"
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold inline-flex items-center space-x-1"
                         >
-                          Select
+                          <span>Open Chart →</span>
                         </button>
                       </td>
                     </tr>
@@ -701,37 +755,46 @@ export const DoctorDashboard = () => {
 
           {/* Orders List */}
           <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <span className="font-bold text-slate-800 uppercase block">Diagnostic Orders Worklist</span>
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="font-bold text-slate-800 uppercase block">Diagnostic Orders Worklist</span>
+              <span className="text-xs text-slate-500 font-medium">Chart: <strong className="text-slate-800">{selectedPatient.firstName} {selectedPatient.lastName} ({selectedPatient.mrn})</strong></span>
+            </div>
             
             <div className="space-y-2.5">
-              {orders.map(o => (
-                <div key={o.id} className="p-3 border rounded-xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="font-bold text-slate-900">{o.name}</div>
-                    <div className="text-[11px] text-slate-500">
-                      {o.type} • Priority: <strong className={o.priority === 'STAT' ? 'text-rose-600' : 'text-slate-700'}>{o.priority}</strong> • Ordered: {o.orderedAt}
-                    </div>
-                    {o.result && (
-                      <div className="mt-1 p-2 bg-emerald-50 text-emerald-800 rounded-lg text-[11px] border border-emerald-200">
-                        <strong>Result:</strong> {o.result}
+              {patientOrders.length > 0 ? (
+                patientOrders.map(o => (
+                  <div key={o.id} className="p-3 border rounded-xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-slate-900">{o.name}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {o.type} • Priority: <strong className={o.priority === 'STAT' ? 'text-rose-600' : 'text-slate-700'}>{o.priority}</strong> • Ordered: {o.orderedAt}
                       </div>
-                    )}
-                  </div>
+                      {o.result && (
+                        <div className="mt-1 p-2 bg-emerald-50 text-emerald-800 rounded-lg text-[11px] border border-emerald-200">
+                          <strong>Result:</strong> {o.result}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="flex-shrink-0">
-                    {o.status === 'Pending' ? (
-                      <button
-                        onClick={() => { setActiveResultOrder(o); setResultText('Normal reference values.'); }}
-                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-medium"
-                      >
-                        Enter Result
-                      </button>
-                    ) : (
-                      <span className="text-xs text-emerald-700 font-bold">✓ Fulfilled</span>
-                    )}
+                    <div className="flex-shrink-0">
+                      {o.status === 'Pending' ? (
+                        <button
+                          onClick={() => { setActiveResultOrder(o); setResultText('Normal reference values.'); }}
+                          className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-medium"
+                        >
+                          Enter Result
+                        </button>
+                      ) : (
+                        <span className="text-xs text-emerald-700 font-bold">✓ Fulfilled</span>
+                      )}
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+                  No diagnostic laboratory or radiology orders placed for {selectedPatient.firstName} {selectedPatient.lastName} yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -802,35 +865,44 @@ export const DoctorDashboard = () => {
 
           {/* Active Medications List */}
           <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <span className="font-bold text-slate-800 uppercase block">Active Patient Medications</span>
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="font-bold text-slate-800 uppercase block">Active Patient Medications</span>
+              <span className="text-xs text-slate-500 font-medium">Chart: <strong className="text-slate-800">{selectedPatient.firstName} {selectedPatient.lastName} ({selectedPatient.mrn})</strong></span>
+            </div>
             
             <div className="space-y-2.5">
-              {prescriptions.map(p => (
-                <div key={p.id} className="p-3 border rounded-xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="font-bold text-slate-900">{p.name}</div>
-                    <div className="text-[11px] text-slate-500">
-                      {p.dosage} • {p.frequency} • {p.duration}
+              {patientPrescriptions.length > 0 ? (
+                patientPrescriptions.map(p => (
+                  <div key={p.id} className="p-3 border rounded-xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-slate-900">{p.name}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {p.dosage} • {p.frequency} • {p.duration}
+                      </div>
+                      {p.override && (
+                        <span className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded mt-1 inline-block">
+                          ⚠️ Overridden: {p.override}
+                        </span>
+                      )}
                     </div>
-                    {p.override && (
-                      <span className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded mt-1 inline-block">
-                        ⚠️ Overridden: {p.override}
-                      </span>
+
+                    {p.status === 'Active' ? (
+                      <button
+                        onClick={() => discontinueRx(p.id)}
+                        className="px-2.5 py-1 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg text-xs"
+                      >
+                        Discontinue
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 text-xs">Discontinued</span>
                     )}
                   </div>
-
-                  {p.status === 'Active' ? (
-                    <button
-                      onClick={() => discontinueRx(p.id)}
-                      className="px-2.5 py-1 text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg text-xs"
-                    >
-                      Discontinue
-                    </button>
-                  ) : (
-                    <span className="text-slate-400 text-xs">Discontinued</span>
-                  )}
+                ))
+              ) : (
+                <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+                  No active prescriptions documented for {selectedPatient.firstName} {selectedPatient.lastName} yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 

@@ -16,6 +16,9 @@ const STORAGE_KEY_AUTH = 'careconnect_auth_session';
 const STORAGE_KEY_USERS = 'careconnect_users_data';
 const STORAGE_KEY_PATIENTS = 'careconnect_patients_data';
 const STORAGE_KEY_APPOINTMENTS = 'careconnect_appointments_data';
+const STORAGE_KEY_ENCOUNTERS = 'careconnect_encounters_data';
+const STORAGE_KEY_ORDERS = 'careconnect_orders_data';
+const STORAGE_KEY_PRESCRIPTIONS = 'careconnect_prescriptions_data';
 const STORAGE_KEY_AUDIT = 'careconnect_audit_logs';
 const STORAGE_KEY_REPORTS = 'careconnect_reports_data';
 const STORAGE_KEY_DELETED_PATIENTS = 'careconnect_deleted_patients';
@@ -217,6 +220,20 @@ export const EhrProvider = ({ children }) => {
       reason: 'Asthma inhaler refill evaluation',
       status: 'Confirmed',
       room: 'Exam Room 3',
+    },
+    {
+      id: 703,
+      patientId: 4,
+      patientName: 'Aisha Patel',
+      mrn: 'MRN-2026-0077',
+      doctorId: 107,
+      doctorName: 'Dr. Rajesh Sharma, MD',
+      department: 'Cardiovascular Medicine',
+      date: '2026-09-29',
+      timeSlot: '03:30 PM',
+      reason: 'Cardiovascular risk evaluation and ECG review',
+      status: 'Confirmed',
+      room: 'Clinic Suite C',
     }
   ];
 
@@ -413,6 +430,18 @@ export const EhrProvider = ({ children }) => {
     saveStorage(STORAGE_KEY_REPORTS, reports);
   }, [reports]);
 
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_ENCOUNTERS, encountersMap);
+  }, [encountersMap]);
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_ORDERS, orders);
+  }, [orders]);
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_PRESCRIPTIONS, prescriptions);
+  }, [prescriptions]);
+
   // Sync to backend on mount if online
   useEffect(() => {
     let isMounted = true;
@@ -456,34 +485,137 @@ export const EhrProvider = ({ children }) => {
     return patients.find(p => p.id === selectedPatientId) || patients[0] || initialPatients[0];
   }, [patients, selectedPatientId, currentUser]);
 
-  // Encounter & SOAP Notes (for John Doe)
-  const [encounter, setEncounter] = useState({
-    id: 1001,
-    patientId: 1,
-    date: 'Sep 29, 2026 • 10:00 AM',
-    doctor: 'Dr. Sarah Smith, MD',
-    status: 'In Progress',
-    chiefComplaint: 'Chest tightness and productive morning cough for 4 days.',
-    vitals: {
-      bpSystolic: 142,
-      bpDiastolic: 92,
-      heartRate: 86,
-      temp: 99.1,
-      spo2: 95,
-      respRate: 18,
+  // Initial Clinical Encounters (per-patient baseline)
+  const initialEncounters = {
+    1: {
+      id: 1001,
+      patientId: 1,
+      hasEncounter: true,
+      date: 'Sep 29, 2026 • 10:00 AM',
+      doctor: 'Dr. Sarah Smith, MD',
+      status: 'In Progress',
+      chiefComplaint: 'Chest tightness and productive morning cough for 4 days.',
+      vitals: {
+        bpSystolic: 142,
+        bpDiastolic: 92,
+        heartRate: 86,
+        temp: 99.1,
+        spo2: 95,
+        respRate: 18,
+      },
+      soap: {
+        subjective: 'Patient reports persistent cough with yellowish sputum and mild chest tightness when walking briskly. Denies fever or chills.',
+        objective: 'Lungs: Scattered mild expiratory wheezes at right base. Heart: Regular rhythm, S1/S2 present. BP elevated at 142/92.',
+        assessment: '1. Acute Bronchitis (J20.9)\n2. Stage 2 Essential Hypertension (I10)',
+        plan: '1. Order STAT Chest X-Ray and CBC.\n2. Prescribe Albuterol Inhaler (2 puffs q4-6h PRN).\n3. Prescribe Lisinopril 10mg daily for BP.\n4. Contraindication: Avoid Penicillin/Amoxicillin due to documented allergy.',
+      },
+      isSigned: false,
+      signedAt: null,
     },
-    soap: {
-      subjective: 'Patient reports persistent cough with yellowish sputum and mild chest tightness when walking briskly. Denies fever or chills.',
-      objective: 'Lungs: Scattered mild expiratory wheezes at right base. Heart: Regular rhythm, S1/S2 present. BP elevated at 142/92.',
-      assessment: '1. Acute Bronchitis (J20.9)\n2. Stage 2 Essential Hypertension (I10)',
-      plan: '1. Order STAT Chest X-Ray and CBC.\n2. Prescribe Albuterol Inhaler (2 puffs q4-6h PRN).\n3. Prescribe Lisinopril 10mg daily for BP.\n4. Contraindication: Avoid Penicillin/Amoxicillin due to documented allergy.',
+    2: {
+      id: 1002,
+      patientId: 2,
+      hasEncounter: true,
+      date: 'Sep 29, 2026 • 02:00 PM',
+      doctor: 'Dr. Sarah Smith, MD',
+      status: 'In Progress',
+      chiefComplaint: 'Asthma controller checkup and maintenance inhaler refill evaluation.',
+      vitals: {
+        bpSystolic: 122,
+        bpDiastolic: 78,
+        heartRate: 72,
+        temp: 98.6,
+        spo2: 98,
+        respRate: 16,
+      },
+      soap: {
+        subjective: 'Maria presents for scheduled asthma checkup. Reports occasional mild morning chest tightness in air conditioning. Adherent with medications.',
+        objective: 'Lungs clear to auscultation bilaterally. No wheezing or rhonchi. Heart regular rate and rhythm.',
+        assessment: '1. Moderate Persistent Asthma (J45.40)\n2. Allergic Rhinitis (J30.9)',
+        plan: '1. Refill Fluticasone Propionate daily inhaler.\n2. Continue Montelukast 10mg at bedtime.\n3. Sulfa allergy alert maintained in chart.',
+      },
+      isSigned: false,
+      signedAt: null,
     },
-    isSigned: false,
-    signedAt: null,
-  });
+    3: {
+      id: 1003,
+      patientId: 3,
+      hasEncounter: true,
+      date: 'Sep 25, 2026 • 11:30 AM',
+      doctor: 'Dr. Michael Chang, MD',
+      status: 'Completed',
+      chiefComplaint: 'Post-discharge follow-up and annual preventive health review.',
+      vitals: {
+        bpSystolic: 118,
+        bpDiastolic: 74,
+        heartRate: 68,
+        temp: 98.4,
+        spo2: 99,
+        respRate: 14,
+      },
+      soap: {
+        subjective: 'Robert reports feeling healthy with no acute physical complaints. Regular exercise 4x/week.',
+        objective: 'Physical exam unremarkable. Clear lung fields, normal heart sounds, abdomen soft and non-tender.',
+        assessment: '1. Routine General Medical Examination (Z00.00)',
+        plan: '1. Annual preventative checkup complete. Follow up in 12 months.\n2. Maintain active lifestyle and balanced diet.',
+      },
+      isSigned: true,
+      signedAt: '11:55 AM',
+    },
+    4: {
+      id: 1004,
+      patientId: 4,
+      hasEncounter: true,
+      date: 'Sep 24, 2026 • 09:15 AM',
+      doctor: 'Dr. Rajesh Sharma, MD',
+      status: 'In Progress',
+      chiefComplaint: 'Cardiovascular screening and routine lipid profile check.',
+      vitals: {
+        bpSystolic: 120,
+        bpDiastolic: 80,
+        heartRate: 70,
+        temp: 98.6,
+        spo2: 98,
+        respRate: 16,
+      },
+      soap: {
+        subjective: 'Aisha reports no chest pain, palpitations, or shortness of breath. Active lifestyle.',
+        objective: 'Cardiovascular: Regular rate and rhythm, normal S1/S2, no murmurs. Lungs clear.',
+        assessment: '1. Cardiovascular Risk Screening - Low Risk',
+        plan: '1. Ordered fasting lipid panel.\n2. Prescribe Vitamin D3 supplement.',
+      },
+      isSigned: false,
+      signedAt: null,
+    },
+    5: {
+      id: 1005,
+      patientId: 5,
+      hasEncounter: true,
+      date: 'Sep 27, 2026 • 03:00 PM',
+      doctor: 'Dr. Rajesh Sharma, MD',
+      status: 'In Progress',
+      chiefComplaint: 'Mild seasonal allergies and skin irritation evaluation.',
+      vitals: {
+        bpSystolic: 126,
+        bpDiastolic: 82,
+        heartRate: 76,
+        temp: 98.8,
+        spo2: 98,
+        respRate: 16,
+      },
+      soap: {
+        subjective: 'Rahul reports mild seasonal nasal congestion and itchy eyes for 1 week. Denies fever.',
+        objective: 'Nasal mucosa mildly erythematous. Lungs clear to auscultation.',
+        assessment: '1. Allergic Rhinitis (J30.9)',
+        plan: '1. Prescribe Cetirizine 10mg as needed.\n2. Latex allergy precautions verified.',
+      },
+      isSigned: false,
+      signedAt: null,
+    }
+  };
 
-  // Diagnostic Orders
-  const [orders, setOrders] = useState([
+  // Initial Diagnostic Orders
+  const initialOrders = [
     {
       id: 301,
       patientId: 1,
@@ -503,11 +635,31 @@ export const EhrProvider = ({ children }) => {
       status: 'Completed',
       orderedAt: '09:50 AM',
       result: 'Normal heart size. Mild peribronchial thickening consistent with bronchitis. No pneumonia or pneumothorax.',
+    },
+    {
+      id: 303,
+      patientId: 2,
+      name: 'Spirometry & Pulmonary Function Test',
+      type: 'Laboratory',
+      priority: 'Routine',
+      status: 'Completed',
+      orderedAt: '01:30 PM',
+      result: 'Post-bronchodilator FEV1/FVC ratio 78%. FEV1 improved by 14% post-inhaler.',
+    },
+    {
+      id: 304,
+      patientId: 4,
+      name: 'Lipid Panel & Fasting Glucose',
+      type: 'Laboratory',
+      priority: 'Routine',
+      status: 'Completed',
+      orderedAt: '09:00 AM',
+      result: 'Total Cholesterol 185 mg/dL, HDL 55 mg/dL, LDL 105 mg/dL, Fasting Glucose 92 mg/dL. All optimal.',
     }
-  ]);
+  ];
 
-  // Prescriptions
-  const [prescriptions, setPrescriptions] = useState([
+  // Initial Prescriptions
+  const initialPrescriptions = [
     {
       id: 501,
       patientId: 1,
@@ -527,8 +679,95 @@ export const EhrProvider = ({ children }) => {
       duration: '30 days',
       status: 'Active',
       override: null,
+    },
+    {
+      id: 503,
+      patientId: 2,
+      name: 'Fluticasone Propionate Inhaler',
+      dosage: '110 mcg',
+      frequency: '2 puffs twice daily',
+      duration: '30 days',
+      status: 'Active',
+      override: null,
+    },
+    {
+      id: 504,
+      patientId: 2,
+      name: 'Montelukast Sodium Tablet',
+      dosage: '10 mg',
+      frequency: 'Once daily at bedtime',
+      duration: '30 days',
+      status: 'Active',
+      override: null,
+    },
+    {
+      id: 505,
+      patientId: 3,
+      name: 'Multivitamin Complete Formula',
+      dosage: '1 tablet',
+      frequency: 'Once daily with meals',
+      duration: '90 days',
+      status: 'Active',
+      override: null,
+    },
+    {
+      id: 506,
+      patientId: 4,
+      name: 'Vitamin D3 (Cholecalciferol)',
+      dosage: '2000 IU',
+      frequency: 'Once daily in the morning',
+      duration: '60 days',
+      status: 'Active',
+      override: null,
+    },
+    {
+      id: 507,
+      patientId: 5,
+      name: 'Cetirizine Hydrochloride',
+      dosage: '10 mg',
+      frequency: 'Once daily as needed for allergy symptoms',
+      duration: '30 days',
+      status: 'Active',
+      override: null,
     }
-  ]);
+  ];
+
+  const [encountersMap, setEncountersMap] = useState(() => loadStorage(STORAGE_KEY_ENCOUNTERS, initialEncounters));
+  const [orders, setOrders] = useState(() => loadStorage(STORAGE_KEY_ORDERS, initialOrders));
+  const [prescriptions, setPrescriptions] = useState(() => loadStorage(STORAGE_KEY_PRESCRIPTIONS, initialPrescriptions));
+
+  // Dynamically resolve the active patient's encounter
+  const encounter = useMemo(() => {
+    const pid = selectedPatient?.id || 1;
+    if (encountersMap && encountersMap[pid]) {
+      return encountersMap[pid];
+    }
+    return {
+      id: 1000 + pid,
+      patientId: pid,
+      hasEncounter: false,
+      date: `${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • 10:00 AM`,
+      doctor: currentUser?.role === 'ROLE_DOCTOR' ? currentUser.fullName : 'Dr. Sarah Smith, MD',
+      status: 'Intake / New',
+      chiefComplaint: 'Outpatient clinical intake and preliminary assessment.',
+      vitals: {
+        bpSystolic: 120,
+        bpDiastolic: 80,
+        heartRate: 72,
+        temp: 98.6,
+        spo2: 99,
+        respRate: 16,
+      },
+      soap: {
+        subjective: `Patient ${selectedPatient?.firstName || ''} ${selectedPatient?.lastName || ''} registered in CareConnect clinical portal. Ready for physician documentation.`,
+        objective: 'Baseline initial intake. Vitals documented.',
+        assessment: '1. Routine General Health Examination (Z00.00)',
+        plan: '1. Complete clinical workup and baseline laboratory profiling.\n2. Formulate ongoing care plan.',
+      },
+      isSigned: false,
+      signedAt: null,
+    };
+  }, [encountersMap, selectedPatient?.id, selectedPatient?.firstName, selectedPatient?.lastName, currentUser]);
 
   // Clinical Doctors List
   const [doctorsList, setDoctorsList] = useState([
@@ -667,12 +906,16 @@ export const EhrProvider = ({ children }) => {
     setIsAuthenticated(true);
     setActiveTab('overview');
 
-    // If logging in as doctor, synchronize encounter doctor identity
+    // If logging in as doctor, set active patient to doctor's next scheduled appointment
     if (user.role === 'ROLE_DOCTOR') {
-      setEncounter(prev => ({
-        ...prev,
-        doctor: user.fullName,
-      }));
+      const myNextAppt = appointments.find(a => 
+        (a.doctorName === user.fullName || a.doctorId === user.id) && a.status !== 'Cancelled'
+      );
+      if (myNextAppt && myNextAppt.patientId) {
+        setSelectedPatientId(myNextAppt.patientId);
+      } else {
+        setSelectedPatientId(1);
+      }
     }
 
     // If logging in as patient, update selectedPatientId to match their patient record!
@@ -870,7 +1113,15 @@ export const EhrProvider = ({ children }) => {
         }
         return d;
       }));
-      setEncounter(prev => ({ ...prev, doctor: updatedName }));
+      setEncountersMap(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(pid => {
+          if (next[pid] && next[pid].doctor === currentUser.fullName) {
+            next[pid] = { ...next[pid], doctor: updatedName };
+          }
+        });
+        return next;
+      });
     }
 
     // 5. Update appointment lists
@@ -1036,23 +1287,53 @@ export const EhrProvider = ({ children }) => {
 
   // Doctor actions
   const updateVitals = (newVitals) => {
-    setEncounter(prev => ({ ...prev, vitals: { ...newVitals } }));
+    const pid = selectedPatient?.id || 1;
+    setEncountersMap(prev => {
+      const cur = prev[pid] || encounter;
+      return {
+        ...prev,
+        [pid]: {
+          ...cur,
+          hasEncounter: true,
+          vitals: { ...cur.vitals, ...newVitals },
+        }
+      };
+    });
     showToast('Vitals saved successfully.', 'success');
   };
 
   const updateSoap = (newSoap) => {
-    setEncounter(prev => ({ ...prev, soap: { ...newSoap } }));
+    const pid = selectedPatient?.id || 1;
+    setEncountersMap(prev => {
+      const cur = prev[pid] || encounter;
+      return {
+        ...prev,
+        [pid]: {
+          ...cur,
+          hasEncounter: true,
+          soap: { ...cur.soap, ...newSoap },
+        }
+      };
+    });
     showToast('Clinical notes updated.', 'info');
   };
 
   const signEncounter = () => {
-    setEncounter(prev => ({
-      ...prev,
-      doctor: currentUser?.fullName || prev.doctor,
-      status: 'Completed',
-      isSigned: true,
-      signedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }));
+    const pid = selectedPatient?.id || 1;
+    setEncountersMap(prev => {
+      const cur = prev[pid] || encounter;
+      return {
+        ...prev,
+        [pid]: {
+          ...cur,
+          hasEncounter: true,
+          doctor: currentUser?.fullName || cur.doctor,
+          status: 'Completed',
+          isSigned: true,
+          signedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }
+      };
+    });
     showToast('Encounter officially signed and closed.', 'success');
   };
 
@@ -1251,7 +1532,6 @@ export const EhrProvider = ({ children }) => {
         registeredDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       };
       setPatients(prev => [patientRecord, ...prev]);
-      setSelectedPatientId(newId);
 
       // Save to backend
       try {
@@ -1577,12 +1857,18 @@ export const EhrProvider = ({ children }) => {
       localStorage.removeItem(STORAGE_KEY_AUDIT);
       localStorage.removeItem(STORAGE_KEY_REPORTS);
       localStorage.removeItem(STORAGE_KEY_AUTH);
+      localStorage.removeItem(STORAGE_KEY_ENCOUNTERS);
+      localStorage.removeItem(STORAGE_KEY_ORDERS);
+      localStorage.removeItem(STORAGE_KEY_PRESCRIPTIONS);
     } catch (e) {}
     setSystemUsers(initialSystemUsers);
     setPatients(initialPatients);
     setAppointments(initialAppointments);
     setAuditLogs(initialAuditLogs);
     setReports(initialReports);
+    setEncountersMap(initialEncounters);
+    setOrders(initialOrders);
+    setPrescriptions(initialPrescriptions);
     setCurrentUser(defaultPersonas.ROLE_DOCTOR);
     setSelectedPatientId(1);
     setIsAuthenticated(false);
