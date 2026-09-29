@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useEhr } from '../context/EhrContext';
-import { Shield, Users, FileText, ScrollText, CheckCircle2, Activity, UserPlus, Search, Filter, X, Trash2, AlertTriangle, KeyRound } from 'lucide-react';
+import { Shield, Users, FileText, ScrollText, CheckCircle2, Activity, UserPlus, Search, Filter, X, Trash2, AlertTriangle, KeyRound, Eye, EyeOff, Lock } from 'lucide-react';
 
 export const AdminDashboard = () => {
   const { patients, encounter, orders, prescriptions, systemUsers, addSystemUser, removeSystemUser, currentUser, auditLogs, activeTab } = useEhr();
@@ -8,6 +8,7 @@ export const AdminDashboard = () => {
   // Local state for staff modal, delete modal, and audit log filter
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [showCredentials, setShowCredentials] = useState(false);
   const [newUser, setNewUser] = useState({ 
     name: '', 
     email: '', 
@@ -163,18 +164,35 @@ export const AdminDashboard = () => {
       {/* USER MANAGEMENT TAB */}
       {activeTab === 'users' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 text-xs">
-          <div className="flex items-center justify-between border-b pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
             <div>
               <span className="font-bold text-slate-800 uppercase block">Manage System Credentials & Roles</span>
               <p className="text-slate-500 text-[11px] mt-0.5">RBAC Access Provisioning for Doctors, Nurses, and Staff</p>
             </div>
-            <button
-              onClick={() => setShowAddUserModal(true)}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>Add New Staff Account</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowCredentials(!showCredentials)}
+                className={`inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition ${
+                  showCredentials
+                    ? 'bg-amber-50 text-amber-900 border-amber-300 ring-1 ring-amber-400'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                }`}
+                title="Admin Master Credential Inspector: Show or hide all passwords"
+              >
+                {showCredentials ? <EyeOff className="w-3.5 h-3.5 text-amber-700" /> : <Eye className="w-3.5 h-3.5 text-slate-600" />}
+                <span>{showCredentials ? 'Hide Passwords' : 'Show All Passwords & Usernames'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAddUserModal(true)}
+                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Add New Staff Account</span>
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-left">
@@ -182,6 +200,12 @@ export const AdminDashboard = () => {
                 <tr>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Role</th>
+                  {showCredentials && (
+                    <>
+                      <th className="px-4 py-3 text-purple-700">Username</th>
+                      <th className="px-4 py-3 text-amber-700">Password</th>
+                    </>
+                  )}
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Last Login</th>
                   <th className="px-4 py-3">Account Status</th>
@@ -197,6 +221,20 @@ export const AdminDashboard = () => {
                         {u.role}
                       </span>
                     </td>
+                    {showCredentials && (
+                      <>
+                        <td className="px-4 py-3">
+                          <code className="bg-purple-50 text-purple-900 border border-purple-200 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+                            {u.username}
+                          </code>
+                        </td>
+                        <td className="px-4 py-3">
+                          <code className="bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+                            {u.password || 'password123'}
+                          </code>
+                        </td>
+                      </>
+                    )}
                     <td className="px-4 py-3 text-slate-500">{u.email}</td>
                     <td className="px-4 py-3 text-slate-400">{u.lastLogin}</td>
                     <td className="px-4 py-3">
