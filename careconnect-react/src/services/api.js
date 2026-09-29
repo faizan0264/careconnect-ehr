@@ -149,6 +149,20 @@ export const api = {
     return null;
   },
 
+  async deletePatient(patientId, staffName) {
+    try {
+      const url = staffName ? `${API_BASE_URL}/patients/${patientId}?staffName=${encodeURIComponent(staffName)}` : `${API_BASE_URL}/patients/${patientId}`;
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: defaultHeaders,
+      });
+      if (res.ok) return true;
+    } catch (err) {
+      console.warn('Backend unavailable, patient deleted locally.');
+    }
+    return false;
+  },
+
   // Appointments
   async getAppointments() {
     try {

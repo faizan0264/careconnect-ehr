@@ -42,4 +42,14 @@ public class PatientController {
         Patient registered = patientService.registerPatient(patient, staffName);
         return ResponseEntity.status(201).body(registered);
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete patient record", description = "Removes a patient record from MPI with HIPAA audit log")
+    public ResponseEntity<?> deletePatient(@PathVariable Long id, @RequestParam(required = false) String staffName) {
+        boolean deleted = patientService.deletePatient(id, staffName);
+        if (!deleted) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().body("{\"message\": \"Patient removed successfully\"}");
+    }
 }

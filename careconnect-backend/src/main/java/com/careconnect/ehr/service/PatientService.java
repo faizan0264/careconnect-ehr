@@ -55,4 +55,18 @@ public class PatientService {
 
         return saved;
     }
+
+    public boolean deletePatient(Long id, String staffName) {
+        return patientRepository.findById(id).map(patient -> {
+            patientRepository.delete(patient);
+            AuditLog log = new AuditLog(
+                staffName != null ? staffName : "System Administrator",
+                "PATIENT_DELETED",
+                "Removed patient record: " + patient.getFirstName() + " " + patient.getLastName() + " (" + patient.getMrn() + ")",
+                LocalTime.now().format(DateTimeFormatter.ofPattern("hh:mm a"))
+            );
+            auditLogRepository.save(log);
+            return true;
+        }).orElse(false);
+    }
 }
