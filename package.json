@@ -1,0 +1,12 @@
+{
+  "name": "careconnect-ehr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CareConnect EHR - Modern Enterprise Electronic Health Records System",
+  "scripts": {
+    "build": "npm --prefix careconnect-react run build",
+    "dev": "npm --prefix careconnect-react run dev",
+    "preview": "npm --prefix careconnect-react run preview",
+    "postinstall": "npm --prefix careconnect-react install"
+  }
+}

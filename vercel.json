@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm --prefix careconnect-react run build",
+  "outputDirectory": "careconnect-react/dist",
+  "installCommand": "npm --prefix careconnect-react install",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
