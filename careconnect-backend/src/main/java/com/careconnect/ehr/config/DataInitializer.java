@@ -49,6 +49,7 @@ public class DataInitializer implements CommandLineRunner {
         User doc2 = new User("dr_chang", "password123", "ROLE_DOCTOR", "Dr. Michael Chang, MD", "dr.chang@careconnect.org", "+1 (555) 100-0102", "Cardiology & Preventive Medicine");
         User adminAlias = new User("admin", "Admin#2026", "ROLE_ADMIN", "System Administrator", "admin@careconnect.org", "+1 (555) 300-0300", "Hospital Administration");
         User docAlias = new User("dr.sharma", "Doctor#2026", "ROLE_DOCTOR", "Dr. Rajesh Sharma, MD", "dr.sharma@careconnect.org", "+1 (555) 100-0103", "Cardiovascular Medicine");
+        User doc3 = new User("dr_emily", "password123", "ROLE_DOCTOR", "Dr. Emily Davis, MD", "dr.emily@careconnect.org", "+1 (555) 100-0104", "Family & General Practice");
         User patientAlias = new User("patient1", "Patient#2026", "ROLE_PATIENT", "John Doe", "patient1@careconnect.org", "+1 (555) 234-5678", "Outpatient");
 
         userRepository.save(doc);
@@ -57,6 +58,7 @@ public class DataInitializer implements CommandLineRunner {
         userRepository.save(doc2);
         userRepository.save(adminAlias);
         userRepository.save(docAlias);
+        userRepository.save(doc3);
         userRepository.save(patientAlias);
 
         // 2. Patients

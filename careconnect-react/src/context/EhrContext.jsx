@@ -86,6 +86,8 @@ export const EhrProvider = ({ children }) => {
     { id: 108, name: 'Aisha Patel', fullName: 'Aisha Patel', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 4, mrn: 'MRN-2026-0077' },
     { id: 109, name: 'Rahul Verma', fullName: 'Rahul Verma', username: 'patient2', password: 'Patient#2026', email: 'rahul.verma@example.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 27, 2026', patientId: 5, mrn: 'MRN-2026-0088' },
     { id: 110, name: 'Robert Chen', fullName: 'Robert Chen', username: 'robert_c', password: 'password123', email: 'robert.chen@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 25, 2026', patientId: 3, mrn: 'MRN-2026-0104' },
+    { id: 111, name: 'Dr. Michael Chang, MD', fullName: 'Dr. Michael Chang, MD', username: 'dr_chang', password: 'password123', email: 'dr.chang@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Cardiology & Preventive Medicine', status: 'Active', lastLogin: 'Today, 09:30 AM' },
+    { id: 112, name: 'Dr. Emily Davis, MD', fullName: 'Dr. Emily Davis, MD', username: 'dr_emily', password: 'password123', email: 'dr.emily@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Family & General Practice', status: 'Active', lastLogin: 'Today, 09:30 AM' },
   ];
 
   // Initial Seed Patients Data
@@ -309,7 +311,14 @@ export const EhrProvider = ({ children }) => {
   const [systemUsers, setSystemUsers] = useState(() => {
     const saved = loadStorage(STORAGE_KEY_USERS, null);
     if (saved && Array.isArray(saved) && saved.length > 0) {
-      return saved;
+      const missing = initialSystemUsers.filter(iu => 
+        !saved.some(su => 
+          (su.username && iu.username && su.username.toLowerCase() === iu.username.toLowerCase()) ||
+          (su.name && iu.name && su.name.toLowerCase() === iu.name.toLowerCase()) ||
+          (su.email && iu.email && su.email.toLowerCase() === iu.email.toLowerCase())
+        )
+      );
+      return missing.length > 0 ? [...saved, ...missing] : saved;
     }
     return initialSystemUsers;
   });
@@ -830,10 +839,46 @@ export const EhrProvider = ({ children }) => {
   // Clinical Doctors List
   const [doctorsList, setDoctorsList] = useState([
     { id: 101, name: 'Dr. Sarah Smith, MD', specialty: 'Internal Medicine & Pulmonology', room: 'Exam Room 3' },
-    { id: 102, name: 'Dr. Michael Chang, MD', specialty: 'Cardiology & Preventive Medicine', room: 'Clinic Suite B' },
-    { id: 103, name: 'Dr. Emily Davis, MD', specialty: 'Family & General Practice', room: 'Exam Room 1' },
     { id: 107, name: 'Dr. Rajesh Sharma, MD', specialty: 'Cardiovascular Medicine', room: 'Clinic Suite C' },
+    { id: 111, name: 'Dr. Michael Chang, MD', specialty: 'Cardiology & Preventive Medicine', room: 'Clinic Suite B' },
+    { id: 112, name: 'Dr. Emily Davis, MD', specialty: 'Family & General Practice', room: 'Exam Room 1' },
   ]);
+
+  // Keep doctorsList dynamically synchronized with any doctors in systemUsers
+  useEffect(() => {
+    const doctorUsers = systemUsers.filter(u => u.role === 'Doctor' || u.role === 'ROLE_DOCTOR');
+    if (doctorUsers.length > 0) {
+      setDoctorsList(prev => {
+        const merged = [...prev];
+        for (const doc of doctorUsers) {
+          const docName = doc.name || doc.fullName || 'Doctor';
+          const docSpecialty = doc.department || 'General Medicine';
+          const suiteLetter = String.fromCharCode(65 + (merged.length % 26));
+          const docRoom = doc.room || `Clinic Suite ${suiteLetter}`;
+          const existingIdx = merged.findIndex(d => 
+            d.id === doc.id || 
+            (d.name && d.name.toLowerCase() === docName.toLowerCase())
+          );
+          if (existingIdx >= 0) {
+            merged[existingIdx] = {
+              ...merged[existingIdx],
+              id: doc.id || merged[existingIdx].id,
+              name: docName,
+              specialty: docSpecialty,
+            };
+          } else {
+            merged.push({
+              id: doc.id || Date.now(),
+              name: docName,
+              specialty: docSpecialty,
+              room: docRoom,
+            });
+          }
+        }
+        return merged;
+      });
+    }
+  }, [systemUsers]);
 
   // Toast notifications
   const [toast, setToast] = useState(null);
