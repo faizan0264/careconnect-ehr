@@ -258,10 +258,31 @@ export const EhrProvider = ({ children }) => {
 
   const [patients, setPatients] = useState(() => {
     const saved = loadStorage(STORAGE_KEY_PATIENTS, null);
-    if (saved && Array.isArray(saved) && saved.length > 0) {
-      return saved;
+    const savedUsers = loadStorage(STORAGE_KEY_USERS, null);
+    
+    let basePatients = (saved && Array.isArray(saved) && saved.length > 0) ? saved : initialPatients;
+    
+    // If the admin has saved custom systemUsers, ensure patients only includes patients that exist in systemUsers
+    if (savedUsers && Array.isArray(savedUsers) && savedUsers.length > 0) {
+      const activePatientUsers = savedUsers.filter(u => u.role === 'Patient');
+      if (activePatientUsers.length > 0) {
+        const allowedUsernames = new Set(activePatientUsers.map(u => (u.username || '').toLowerCase()));
+        const allowedNames = new Set(activePatientUsers.map(u => (u.name || u.fullName || '').toLowerCase()));
+        const allowedMrns = new Set(activePatientUsers.filter(u => u.mrn).map(u => u.mrn.toLowerCase()));
+        
+        const matched = basePatients.filter(p => 
+          (p.username && allowedUsernames.has(p.username.toLowerCase())) ||
+          (p.mrn && allowedMrns.has(p.mrn.toLowerCase())) ||
+          (p.fullName && allowedNames.has(p.fullName.toLowerCase())) ||
+          (`${p.firstName} ${p.lastName}` && allowedNames.has(`${p.firstName} ${p.lastName}`.toLowerCase()))
+        );
+        if (matched.length > 0) {
+          return matched;
+        }
+      }
     }
-    return initialPatients;
+    
+    return basePatients;
   });
 
   const [appointments, setAppointments] = useState(() => loadStorage(STORAGE_KEY_APPOINTMENTS, initialAppointments));

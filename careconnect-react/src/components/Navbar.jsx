@@ -148,33 +148,25 @@ export const Navbar = () => {
             {role === 'ROLE_ADMIN' && (
               <>
                 <button
-                  onClick={() => handleTabClick('users')}
-                  className={`px-3 py-2 rounded-lg transition ${
-                    activeTab === 'users' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  Users & Passwords
-                </button>
-                <button
-                  onClick={() => handleTabClick('patients')}
-                  className={`px-3 py-2 rounded-lg transition ${
-                    activeTab === 'patients' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  Patients MPI
-                </button>
-                <button
                   onClick={() => handleTabClick('overview')}
                   className={`px-3 py-2 rounded-lg transition ${
-                    activeTab === 'overview' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    activeTab === 'overview' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
                   Analytics & Stats
                 </button>
                 <button
+                  onClick={() => handleTabClick('users')}
+                  className={`px-3 py-2 rounded-lg transition ${
+                    activeTab === 'users' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  User Management
+                </button>
+                <button
                   onClick={() => handleTabClick('audit')}
                   className={`px-3 py-2 rounded-lg transition ${
-                    activeTab === 'audit' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    activeTab === 'audit' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
                   HIPAA Audit Trail
@@ -292,22 +284,16 @@ export const Navbar = () => {
           {role === 'ROLE_ADMIN' && (
             <>
               <button
-                onClick={() => handleTabClick('users')}
-                className={`w-full text-left px-3 py-2 rounded-lg ${activeTab === 'users' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600'}`}
-              >
-                Users & Passwords
-              </button>
-              <button
-                onClick={() => handleTabClick('patients')}
-                className={`w-full text-left px-3 py-2 rounded-lg ${activeTab === 'patients' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600'}`}
-              >
-                Patients MPI
-              </button>
-              <button
                 onClick={() => handleTabClick('overview')}
                 className={`w-full text-left px-3 py-2 rounded-lg ${activeTab === 'overview' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600'}`}
               >
                 Analytics & Stats
+              </button>
+              <button
+                onClick={() => handleTabClick('users')}
+                className={`w-full text-left px-3 py-2 rounded-lg ${activeTab === 'users' ? 'bg-purple-50 text-purple-700 font-bold' : 'text-slate-600'}`}
+              >
+                User Management
               </button>
               <button
                 onClick={() => handleTabClick('audit')}

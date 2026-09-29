@@ -36,7 +36,6 @@ export const DoctorDashboard = () => {
     selectedPatient, 
     setSelectedPatientId, 
     registerPatient, 
-    removePatient,
     encounter, 
     updateVitals, 
     updateSoap, 
@@ -61,7 +60,6 @@ export const DoctorDashboard = () => {
   // Local state
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
-  const [patientToDelete, setPatientToDelete] = useState(null);
   const [newPatient, setNewPatient] = useState({
     firstName: '',
     lastName: '',
@@ -386,24 +384,12 @@ export const DoctorDashboard = () => {
                       </td>
                       <td className="px-5 py-3.5 text-slate-500">{p.phone}</td>
                       <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end space-x-1.5">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setSelectedPatientId(p.id); setActiveTab('soap'); }}
-                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs"
-                          >
-                            Select
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setPatientToDelete(p); }}
-                            className="inline-flex items-center space-x-1 px-2 py-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-xs font-semibold border border-red-200 transition"
-                            title="Delete patient from EHR"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedPatientId(p.id); setActiveTab('soap'); }}
+                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold"
+                        >
+                          Select
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1265,45 +1251,6 @@ export const DoctorDashboard = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: CONFIRM PATIENT REMOVAL */}
-      {patientToDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-200 text-xs animate-in fade-in zoom-in-95 duration-150">
-            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-
-            <div className="text-center space-y-1.5">
-              <h3 className="font-bold text-sm text-slate-900">Remove Patient Record</h3>
-              <p className="text-slate-500 text-[11px] leading-relaxed">
-                Are you sure you want to permanently remove <strong className="text-slate-800">{patientToDelete.fullName}</strong> ({patientToDelete.mrn})?
-                This will delete their clinical record from the Master Patient Index and cancel active appointments.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setPatientToDelete(null)}
-                className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  removePatient(patientToDelete.id);
-                  setPatientToDelete(null);
-                }}
-                className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-sm transition"
-              >
-                Confirm Delete
-              </button>
-            </div>
           </div>
         </div>
       )}
