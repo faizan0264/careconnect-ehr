@@ -22,6 +22,7 @@ const STORAGE_KEY_PRESCRIPTIONS = 'careconnect_prescriptions_data';
 const STORAGE_KEY_AUDIT = 'careconnect_audit_logs';
 const STORAGE_KEY_REPORTS = 'careconnect_reports_data';
 const STORAGE_KEY_DELETED_PATIENTS = 'careconnect_deleted_patients';
+const STORAGE_KEY_SELECTED_PATIENT = 'careconnect_selected_patient_id';
 
 const loadStorage = (key, fallback) => {
   try {
@@ -324,7 +325,7 @@ export const EhrProvider = ({ children }) => {
     
     // If systemUsers is saved, synchronize patients directly from the active patient users
     if (savedUsers && Array.isArray(savedUsers)) {
-      const activePatientUsers = savedUsers.filter(u => u.role === 'Patient');
+      const activePatientUsers = savedUsers.filter(u => u.role === 'Patient' || u.role === 'ROLE_PATIENT');
       if (activePatientUsers.length > 0) {
         // Unblock active MRNs from deleted storage if they were previously cascaded by accident
         const activeMrnSet = new Set(activePatientUsers.filter(u => u.mrn).map(u => u.mrn.toLowerCase()));
@@ -343,32 +344,32 @@ export const EhrProvider = ({ children }) => {
           seenKeys.add(key);
           
           let match = patientPool.find(p => 
-            (user.patientId && p.id === user.patientId) ||
+            (user.patientId && Number(p.id) === Number(user.patientId)) ||
+            (user.mrn && p.mrn && p.mrn.toLowerCase() === user.mrn.toLowerCase()) ||
             (p.username && user.username && p.username.toLowerCase() === user.username.toLowerCase()) ||
             (p.fullName && user.name && p.fullName.toLowerCase() === user.name.toLowerCase()) ||
-            (`${p.firstName} ${p.lastName}`.toLowerCase() === (user.name || '').toLowerCase()) ||
-            (user.mrn && p.mrn === user.mrn && (p.fullName?.toLowerCase() === user.name?.toLowerCase() || p.username?.toLowerCase() === user.username?.toLowerCase()))
+            (`${p.firstName} ${p.lastName}`.toLowerCase() === (user.name || '').toLowerCase())
           );
           
           if (!match && user.mrn) {
-            match = patientPool.find(p => p.mrn === user.mrn);
+            match = patientPool.find(p => p.mrn && p.mrn.toLowerCase() === user.mrn.toLowerCase());
           }
           
           if (match) {
             syncedPatients.push({
               ...match,
-              fullName: user.name || match.fullName,
+              fullName: user.name || user.fullName || match.fullName,
               username: user.username || match.username,
               email: user.email || match.email,
             });
           } else {
-            const parts = (user.name || 'Patient User').split(' ');
+            const parts = (user.name || user.fullName || 'Patient User').split(' ');
             syncedPatients.push({
               id: user.patientId || user.id || Date.now(),
               mrn: user.mrn || `MRN-2026-${Math.floor(1000 + Math.random() * 9000)}`,
               firstName: parts[0] || 'Patient',
               lastName: parts.slice(1).join(' ') || 'User',
-              fullName: user.name || 'Patient User',
+              fullName: user.name || user.fullName || 'Patient User',
               username: user.username,
               email: user.email,
               dateOfBirth: '1985-04-12',
@@ -387,7 +388,8 @@ export const EhrProvider = ({ children }) => {
         }
         
         if (syncedPatients.length > 0) {
-          return syncedPatients;
+          const unmapped = patientPool.filter(p => !syncedPatients.some(sp => sp.id === p.id || (p.mrn && sp.mrn && sp.mrn.toLowerCase() === p.mrn.toLowerCase())));
+          return [...syncedPatients, ...unmapped];
         }
       }
     }
@@ -456,23 +458,70 @@ export const EhrProvider = ({ children }) => {
   }, []);
 
   // Selected Patient - dynamically resolves to logged-in patient if in Patient Portal!
-  const [selectedPatientId, setSelectedPatientId] = useState(1);
+  const [selectedPatientId, setSelectedPatientId] = useState(() => {
+    const saved = loadStorage(STORAGE_KEY_SELECTED_PATIENT, null);
+    return saved ? Number(saved) : 1;
+  });
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_SELECTED_PATIENT, selectedPatientId);
+  }, [selectedPatientId]);
+
   const selectedPatient = useMemo(() => {
     const list = Array.isArray(patients) && patients.length > 0 ? patients : initialPatients;
+
+    // 1. PATIENT PORTAL: Strictly bind to the authenticated patient's profile. NEVER FALL BACK TO JOHN DOE OR list[0]!
     if (currentUser && (currentUser.role === 'ROLE_PATIENT' || currentUser.role === 'Patient')) {
       const match = list.find(p => 
-        (currentUser.patientId && p.id === currentUser.patientId) ||
-        (currentUser.mrn && p.mrn === currentUser.mrn) ||
+        (currentUser.patientId && Number(p.id) === Number(currentUser.patientId)) ||
+        (currentUser.mrn && p.mrn && p.mrn.toLowerCase() === currentUser.mrn.toLowerCase()) ||
         (currentUser.username && p.username && p.username.toLowerCase() === currentUser.username.toLowerCase()) ||
         (currentUser.email && p.email && p.email.toLowerCase() === currentUser.email.toLowerCase()) ||
         (currentUser.fullName && p.fullName && p.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) ||
-        (currentUser.fullName && `${p.firstName} ${p.lastName}`.toLowerCase() === currentUser.fullName.toLowerCase()) ||
-        (p.id === selectedPatientId)
+        (currentUser.fullName && `${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase() === currentUser.fullName.toLowerCase()) ||
+        (currentUser.name && p.fullName && p.fullName.toLowerCase() === currentUser.name.toLowerCase()) ||
+        (currentUser.phone && p.phone && p.phone === currentUser.phone)
       );
       if (match) return match;
+
+      // If registered patient is not yet in the list (e.g. storage sync delay),
+      // synthesize patient profile directly from the authenticated currentUser!
+      const nameStr = currentUser.fullName || currentUser.name || currentUser.username || 'Patient User';
+      const parts = nameStr.split(' ');
+      return {
+        id: currentUser.patientId || currentUser.id || Date.now(),
+        mrn: currentUser.mrn || `MRN-2026-${String(currentUser.id || Math.floor(1000 + Math.random() * 9000)).slice(-4)}`,
+        firstName: parts[0] || 'Patient',
+        lastName: parts.slice(1).join(' ') || 'User',
+        fullName: nameStr,
+        username: currentUser.username,
+        email: currentUser.email || `${currentUser.username || 'patient'}@careconnect.org`,
+        dateOfBirth: currentUser.dateOfBirth || '1995-01-01',
+        age: currentUser.age || 30,
+        gender: currentUser.gender || 'Other',
+        bloodGroup: currentUser.bloodGroup || 'O+',
+        phone: currentUser.phone || '+1 (555) 000-0000',
+        contactPhone: currentUser.phone || '+1 (555) 000-0000',
+        allergies: currentUser.allergies || 'None (NKDA)',
+        emergencyContact: currentUser.emergencyContact || 'Family Emergency Contact',
+        room: 'Outpatient Reception',
+        status: 'Active',
+        registeredDate: currentUser.registeredDate || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
     }
-    return list.find(p => p.id === selectedPatientId) || list[0] || initialPatients[0];
+
+    // 2. DOCTOR / ADMIN PORTAL: Resolves to selectedPatientId
+    return list.find(p => Number(p.id) === Number(selectedPatientId)) || list[0] || initialPatients[0];
   }, [patients, selectedPatientId, currentUser]);
+
+  // Keep selectedPatientId in sync with the active patient in the patient portal
+  useEffect(() => {
+    if (currentUser && (currentUser.role === 'ROLE_PATIENT' || currentUser.role === 'Patient')) {
+      if (selectedPatient && selectedPatient.id && Number(selectedPatientId) !== Number(selectedPatient.id)) {
+        setSelectedPatientId(selectedPatient.id);
+      }
+    }
+  }, [currentUser, selectedPatient?.id, selectedPatientId]);
 
   // Initial Clinical Encounters (per-patient baseline)
   const initialEncounters = {
@@ -930,18 +979,19 @@ export const EhrProvider = ({ children }) => {
     // If logging in as patient, update selectedPatientId to match their patient record!
     if (user.role === 'ROLE_PATIENT') {
       const match = patients.find(p => 
-        (user.patientId && p.id === user.patientId) ||
-        (user.mrn && p.mrn === user.mrn) ||
+        (user.patientId && Number(p.id) === Number(user.patientId)) ||
+        (user.mrn && p.mrn && p.mrn.toLowerCase() === user.mrn.toLowerCase()) ||
         (user.username && p.username && p.username.toLowerCase() === user.username.toLowerCase()) ||
         (user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()) ||
         (user.fullName && p.fullName && p.fullName.toLowerCase() === user.fullName.toLowerCase()) ||
-        (user.fullName && `${p.firstName} ${p.lastName}`.toLowerCase() === user.fullName.toLowerCase())
+        (user.fullName && `${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase() === user.fullName.toLowerCase())
       );
-      if (match) {
-        setSelectedPatientId(match.id);
-      }
+      const chosenPatientId = match ? match.id : (user.patientId || user.id);
+      setSelectedPatientId(chosenPatientId);
+      saveStorage(STORAGE_KEY_SELECTED_PATIENT, chosenPatientId);
     }
 
+    saveStorage(STORAGE_KEY_AUTH, { isAuthenticated: true, currentUser: user, activeTab: 'overview' });
     showToast(`Signed in successfully as ${user.fullName}`, 'success');
     return { success: true, user };
   };
@@ -955,7 +1005,8 @@ export const EhrProvider = ({ children }) => {
 
     const suffix = Math.floor(1000 + Math.random() * 9000);
     const newUserId = Date.now();
-    const newPatientId = patients.length + 1;
+    const maxPatientId = patients.reduce((max, p) => Math.max(max, Number(p.id) || 0), 100);
+    const newPatientId = maxPatientId + 1;
     const mrn = `MRN-2026-${suffix}`;
 
     const newPatient = {
@@ -993,15 +1044,13 @@ export const EhrProvider = ({ children }) => {
       mrn: mrn,
     };
 
-    // 1. Update React state and local persistence
-    setPatients(prev => [newPatient, ...prev]);
-    setSelectedPatientId(newPatientId);
-
-    setSystemUsers(prev => [
-      ...prev.filter(u => u.username?.toLowerCase() !== cleanUsername.toLowerCase() && u.email?.toLowerCase() !== cleanEmail.toLowerCase()),
+    const updatedPatients = [newPatient, ...patients];
+    const updatedUsers = [
+      ...systemUsers.filter(u => u.username?.toLowerCase() !== cleanUsername.toLowerCase() && u.email?.toLowerCase() !== cleanEmail.toLowerCase()),
       {
         id: newUserId,
         name: cleanName,
+        fullName: cleanName,
         username: cleanUsername,
         password: cleanPassword,
         email: cleanEmail,
@@ -1013,7 +1062,18 @@ export const EhrProvider = ({ children }) => {
         patientId: newPatientId,
         mrn: mrn,
       }
-    ]);
+    ];
+
+    // 1. Update React state
+    setPatients(updatedPatients);
+    setSelectedPatientId(newPatientId);
+    setSystemUsers(updatedUsers);
+
+    // 2. Synchronously write to local storage so page refresh preserves new patient immediately
+    saveStorage(STORAGE_KEY_PATIENTS, updatedPatients);
+    saveStorage(STORAGE_KEY_USERS, updatedUsers);
+    saveStorage(STORAGE_KEY_SELECTED_PATIENT, newPatientId);
+    saveStorage(STORAGE_KEY_AUTH, { isAuthenticated: true, currentUser: newUser, activeTab: 'overview' });
 
     setAuditLogs(prev => [{
       id: prev.length + 901,
@@ -1023,7 +1083,7 @@ export const EhrProvider = ({ children }) => {
       details: `New Patient self-registered account: ${cleanName} (Username: ${cleanUsername}, MRN: ${mrn})`
     }, ...prev]);
 
-    // 2. Transmit to Spring Boot REST API
+    // 3. Transmit to Spring Boot REST API
     try {
       await api.registerPatientAccount({
         fullName: cleanName,
@@ -1036,7 +1096,7 @@ export const EhrProvider = ({ children }) => {
       console.warn('Backend patient registration offline, registered in browser session.');
     }
 
-    // 3. Establish active session
+    // 4. Establish active session
     setCurrentUser(newUser);
     setIsAuthenticated(true);
     setActiveTab('overview');
