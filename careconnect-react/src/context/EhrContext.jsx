@@ -71,14 +71,15 @@ export const EhrProvider = ({ children }) => {
 
   // Initial Seed System Users
   const initialSystemUsers = [
-    { id: 101, name: 'Dr. Sarah Smith, MD', username: 'dr_smith', password: 'password123', email: 'dr.smith@careconnect.org', role: 'Doctor', department: 'Internal Medicine & Pulmonology', status: 'Active', lastLogin: 'Today, 09:30 AM' },
-    { id: 102, name: 'Nurse Emma Watson, RN', username: 'nurse_emma', password: 'password123', email: 'nurse.emma@careconnect.org', role: 'Nurse', department: 'Outpatient Triage', status: 'Active', lastLogin: 'Today, 08:15 AM' },
-    { id: 103, name: 'Alex Morgan', username: 'admin_alex', password: 'password123', email: 'alex.admin@careconnect.org', role: 'Administrator', department: 'Health Informatics & Compliance', status: 'Active', lastLogin: 'Today, 09:00 AM' },
-    { id: 104, name: 'John Doe', username: 'john_doe', password: 'password123', email: 'john.doe@gmail.com', role: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM' },
-    { id: 105, name: 'Maria Gonzalez', username: 'maria_g', password: 'password123', email: 'maria.g@gmail.com', role: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 26, 2026' },
-    { id: 106, name: 'System Administrator', username: 'admin', password: 'Admin#2026', email: 'admin@careconnect.org', role: 'Administrator', department: 'Hospital Administration', status: 'Active', lastLogin: 'Today, 09:00 AM' },
-    { id: 107, name: 'Dr. Rajesh Sharma, MD', username: 'dr.sharma', password: 'Doctor#2026', email: 'dr.sharma@careconnect.org', role: 'Doctor', department: 'Cardiovascular Medicine', status: 'Active', lastLogin: 'Today, 09:30 AM' },
-    { id: 108, name: 'John Doe', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM' },
+    { id: 101, name: 'Dr. Sarah Smith, MD', fullName: 'Dr. Sarah Smith, MD', username: 'dr_smith', password: 'password123', email: 'dr.smith@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Internal Medicine & Pulmonology', status: 'Active', lastLogin: 'Today, 09:30 AM' },
+    { id: 102, name: 'Nurse Emma Watson, RN', fullName: 'Nurse Emma Watson, RN', username: 'nurse_emma', password: 'password123', email: 'nurse.emma@careconnect.org', role: 'Nurse', roleLabel: 'Registered Nurse', department: 'Outpatient Triage', status: 'Active', lastLogin: 'Today, 08:15 AM' },
+    { id: 103, name: 'Alex Morgan', fullName: 'Alex Morgan', username: 'admin_alex', password: 'password123', email: 'alex.admin@careconnect.org', role: 'Administrator', roleLabel: 'System Administrator', department: 'Health Informatics & Compliance', status: 'Active', lastLogin: 'Today, 09:00 AM' },
+    { id: 104, name: 'John Doe', fullName: 'John Doe', username: 'john_doe', password: 'password123', email: 'john.doe@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 1, mrn: 'MRN-2026-0042' },
+    { id: 105, name: 'Maria Gonzalez', fullName: 'Maria Gonzalez', username: 'maria_g', password: 'password123', email: 'maria.g@gmail.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 26, 2026', patientId: 2, mrn: 'MRN-2026-0089' },
+    { id: 106, name: 'Hospital Administrator', fullName: 'Hospital Administrator', username: 'admin', password: 'Admin#2026', email: 'admin@careconnect.org', role: 'Administrator', roleLabel: 'System Administrator', department: 'Hospital Administration', status: 'Active', lastLogin: 'Today, 09:00 AM' },
+    { id: 107, name: 'Dr. Rajesh Sharma, MD', fullName: 'Dr. Rajesh Sharma, MD', username: 'dr.sharma', password: 'Doctor#2026', email: 'dr.sharma@careconnect.org', role: 'Doctor', roleLabel: 'Doctor / Physician', department: 'Cardiovascular Medicine', status: 'Active', lastLogin: 'Today, 09:30 AM' },
+    { id: 108, name: 'Aisha Patel', fullName: 'Aisha Patel', username: 'patient1', password: 'Patient#2026', email: 'patient1@careconnect.org', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Yesterday, 04:20 PM', patientId: 1, mrn: 'MRN-2026-0042' },
+    { id: 109, name: 'Rahul Verma', fullName: 'Rahul Verma', username: 'patient2', password: 'Patient#2026', email: 'rahul.verma@example.com', role: 'Patient', roleLabel: 'Patient', department: 'Outpatient', status: 'Active', lastLogin: 'Sep 27, 2026', patientId: 2, mrn: 'MRN-2026-0089' },
   ];
 
   // Initial Seed Patients Data
@@ -88,45 +89,60 @@ export const EhrProvider = ({ children }) => {
       mrn: 'MRN-2026-0042',
       firstName: 'John',
       lastName: 'Doe',
+      fullName: 'John Doe',
+      username: 'john_doe',
+      email: 'john.doe@gmail.com',
       dateOfBirth: '1985-04-12',
       age: 41,
       gender: 'Male',
       bloodGroup: 'O+',
       phone: '+1 (555) 234-5678',
+      contactPhone: '+1 (555) 234-5678',
       allergies: 'Penicillin, NSAIDs (Aspirin/Ibuprofen)',
       emergencyContact: 'Jane Doe (Wife) - +1 (555) 234-5679',
       room: 'Exam Room 3',
       status: 'In Consultation',
+      registeredDate: 'Sep 20, 2026',
     },
     {
       id: 2,
       mrn: 'MRN-2026-0089',
       firstName: 'Maria',
       lastName: 'Gonzalez',
+      fullName: 'Maria Gonzalez',
+      username: 'maria_g',
+      email: 'maria.g@gmail.com',
       dateOfBirth: '1968-11-23',
       age: 57,
       gender: 'Female',
       bloodGroup: 'A+',
       phone: '+1 (555) 876-5432',
+      contactPhone: '+1 (555) 876-5432',
       allergies: 'Sulfa Antibiotics',
       emergencyContact: 'Carlos (Son) - +1 (555) 876-5430',
       room: 'Waiting Room',
       status: 'Scheduled',
+      registeredDate: 'Sep 22, 2026',
     },
     {
       id: 3,
       mrn: 'MRN-2026-0104',
       firstName: 'Robert',
       lastName: 'Chen',
+      fullName: 'Robert Chen',
+      username: 'robert_c',
+      email: 'robert.chen@gmail.com',
       dateOfBirth: '1995-07-08',
       age: 31,
       gender: 'Male',
       bloodGroup: 'B+',
       phone: '+1 (555) 456-7890',
+      contactPhone: '+1 (555) 456-7890',
       allergies: 'None (NKDA)',
       emergencyContact: 'Lin Chen - +1 (555) 456-7891',
       room: 'Completed',
       status: 'Discharged',
+      registeredDate: 'Sep 25, 2026',
     }
   ];
 
@@ -229,14 +245,32 @@ export const EhrProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => (savedAuth && savedAuth.currentUser) || defaultPersonas.ROLE_DOCTOR);
   const [activeTab, setActiveTab] = useState(() => (savedAuth && savedAuth.activeTab) || 'overview');
 
-  // Persistent Collections
-  const [systemUsers, setSystemUsers] = useState(() => loadStorage(STORAGE_KEY_USERS, initialSystemUsers));
-  const [patients, setPatients] = useState(() => loadStorage(STORAGE_KEY_PATIENTS, initialPatients));
+  // Persistent Collections (with seed merging so existing browsers get full user roster)
+  const [systemUsers, setSystemUsers] = useState(() => {
+    const saved = loadStorage(STORAGE_KEY_USERS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      return initialSystemUsers;
+    }
+    const existing = new Set(saved.map(u => (u.username || '').toLowerCase()));
+    const missing = initialSystemUsers.filter(u => !existing.has((u.username || '').toLowerCase()));
+    return missing.length > 0 ? [...saved, ...missing] : saved;
+  });
+
+  const [patients, setPatients] = useState(() => {
+    const saved = loadStorage(STORAGE_KEY_PATIENTS, null);
+    if (!saved || !Array.isArray(saved) || saved.length === 0) {
+      return initialPatients;
+    }
+    const existingMrns = new Set(saved.map(p => p.mrn));
+    const missing = initialPatients.filter(p => !existingMrns.has(p.mrn));
+    return missing.length > 0 ? [...saved, ...missing] : saved;
+  });
+
   const [appointments, setAppointments] = useState(() => loadStorage(STORAGE_KEY_APPOINTMENTS, initialAppointments));
   const [auditLogs, setAuditLogs] = useState(() => loadStorage(STORAGE_KEY_AUDIT, initialAuditLogs));
   const [reports, setReports] = useState(() => loadStorage(STORAGE_KEY_REPORTS, initialReports));
 
-  // Sync to localStorage whenever state changes
+  // Sync state to local storage
   useEffect(() => {
     saveStorage(STORAGE_KEY_AUTH, { isAuthenticated, currentUser, activeTab });
   }, [isAuthenticated, currentUser, activeTab]);
@@ -261,12 +295,42 @@ export const EhrProvider = ({ children }) => {
     saveStorage(STORAGE_KEY_REPORTS, reports);
   }, [reports]);
 
-  // Selected Patient
+  // Sync to backend on mount if online
+  useEffect(() => {
+    let isMounted = true;
+    const syncCloudData = async () => {
+      try {
+        const cloudPatients = await api.getPatients();
+        if (isMounted && Array.isArray(cloudPatients) && cloudPatients.length > 0) {
+          setPatients(prev => {
+            const existingMrns = new Set(prev.map(p => p.mrn));
+            const newOnes = cloudPatients.filter(cp => !existingMrns.has(cp.mrn));
+            return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+          });
+        }
+      } catch (e) {}
+    };
+    syncCloudData();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Selected Patient - dynamically resolves to logged-in patient if in Patient Portal!
   const [selectedPatientId, setSelectedPatientId] = useState(1);
-  const selectedPatient = useMemo(
-    () => patients.find(p => p.id === selectedPatientId) || patients[0] || initialPatients[0],
-    [patients, selectedPatientId]
-  );
+  const selectedPatient = useMemo(() => {
+    if (currentUser && currentUser.role === 'ROLE_PATIENT') {
+      const match = patients.find(p => 
+        (currentUser.patientId && p.id === currentUser.patientId) ||
+        (currentUser.mrn && p.mrn === currentUser.mrn) ||
+        (currentUser.username && p.username && p.username.toLowerCase() === currentUser.username.toLowerCase()) ||
+        (currentUser.email && p.email && p.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+        (currentUser.fullName && p.fullName && p.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) ||
+        (currentUser.fullName && `${p.firstName} ${p.lastName}`.toLowerCase() === currentUser.fullName.toLowerCase()) ||
+        (p.id === selectedPatientId)
+      );
+      if (match) return match;
+    }
+    return patients.find(p => p.id === selectedPatientId) || patients[0] || initialPatients[0];
+  }, [patients, selectedPatientId, currentUser]);
 
   // Encounter & SOAP Notes (for John Doe)
   const [encounter, setEncounter] = useState({
@@ -377,45 +441,46 @@ export const EhrProvider = ({ children }) => {
     // 1. Attempt Spring Boot backend REST API authentication
     try {
       const beAuth = await api.login(customCredentials.username.trim(), enteredPass);
-      if (beAuth) {
-        if (beAuth.success) {
-          const roleNormalized = beAuth.role || roleKey;
-          
-          // Role matching check
-          if (roleKey === 'ROLE_PATIENT' && roleNormalized !== 'ROLE_PATIENT') {
-            showToast('Access Denied: This account is registered as Hospital Staff, not a Patient.', 'error');
-            return { success: false, message: 'Access denied: Please select the Doctor or Admin role tab.' };
-          }
-          if (roleKey === 'ROLE_DOCTOR' && roleNormalized !== 'ROLE_DOCTOR') {
-            showToast('Access Denied: This account is not authorized as a Physician.', 'error');
-            return { success: false, message: 'Access denied: Healthcare provider authorization required.' };
-          }
-          if (roleKey === 'ROLE_ADMIN' && roleNormalized !== 'ROLE_ADMIN') {
-            showToast('Access Denied: Administrator security clearance required.', 'error');
-            return { success: false, message: 'Access denied: Administrator clearance required.' };
-          }
-
-          user = {
-            id: beAuth.userId || 101,
-            role: roleNormalized,
-            roleLabel: roleNormalized === 'ROLE_PATIENT' ? 'Patient' : (roleNormalized === 'ROLE_DOCTOR' ? 'Doctor / Physician' : 'System Administrator'),
-            username: beAuth.username,
-            fullName: beAuth.fullName || beAuth.username,
-            email: `${beAuth.username}@careconnect.org`,
-            department: roleNormalized === 'ROLE_PATIENT' ? 'Outpatient' : (roleNormalized === 'ROLE_DOCTOR' ? 'Clinical Care' : 'Hospital Administration'),
-            token: beAuth.token,
-          };
-        } else {
-          // Backend explicitly rejected credentials! Stop here!
-          showToast(beAuth.message || 'Invalid username or password.', 'error');
-          return { success: false, message: beAuth.message || 'Invalid username or password. Please verify your credentials or register.' };
+      if (beAuth && beAuth.success) {
+        const roleNormalized = beAuth.role || roleKey;
+        
+        // Role matching check
+        if (roleKey === 'ROLE_PATIENT' && roleNormalized !== 'ROLE_PATIENT') {
+          showToast('Access Denied: This account is registered as Hospital Staff, not a Patient.', 'error');
+          return { success: false, message: 'Access denied: Please select the Doctor or Admin role tab.' };
         }
+        if (roleKey === 'ROLE_DOCTOR' && roleNormalized !== 'ROLE_DOCTOR') {
+          showToast('Access Denied: This account is not authorized as a Physician.', 'error');
+          return { success: false, message: 'Access denied: Healthcare provider authorization required.' };
+        }
+        if (roleKey === 'ROLE_ADMIN' && roleNormalized !== 'ROLE_ADMIN') {
+          showToast('Access Denied: Administrator security clearance required.', 'error');
+          return { success: false, message: 'Access denied: Administrator clearance required.' };
+        }
+
+        const localUserMatch = systemUsers.find(u => 
+          (u.username && u.username.toLowerCase() === enteredUser) ||
+          (u.email && u.email.toLowerCase() === enteredUser)
+        );
+
+        user = {
+          id: beAuth.userId || (localUserMatch ? localUserMatch.id : 101),
+          role: roleNormalized,
+          roleLabel: roleNormalized === 'ROLE_PATIENT' ? 'Patient' : (roleNormalized === 'ROLE_DOCTOR' ? 'Doctor / Physician' : 'System Administrator'),
+          username: beAuth.username,
+          fullName: beAuth.fullName || (localUserMatch ? localUserMatch.fullName : beAuth.username),
+          email: (localUserMatch && localUserMatch.email) || `${beAuth.username}@careconnect.org`,
+          department: roleNormalized === 'ROLE_PATIENT' ? 'Outpatient' : (roleNormalized === 'ROLE_DOCTOR' ? 'Clinical Care' : 'Hospital Administration'),
+          patientId: localUserMatch ? localUserMatch.patientId : (roleNormalized === 'ROLE_PATIENT' ? beAuth.userId : undefined),
+          mrn: localUserMatch ? localUserMatch.mrn : undefined,
+          token: beAuth.token,
+        };
       }
     } catch (err) {
       console.warn('Backend login endpoint unavailable, checking local registered directory:', err);
     }
 
-    // 2. If backend was unreachable via network, check locally registered persistent systemUsers
+    // 2. If backend didn't authenticate, check locally registered persistent systemUsers
     if (!user) {
       const found = systemUsers.find(u => 
         (u.username && u.username.toLowerCase() === enteredUser) ||
@@ -459,7 +524,7 @@ export const EhrProvider = ({ children }) => {
         id: found.id,
         role: isDoc ? 'ROLE_DOCTOR' : (isPat ? 'ROLE_PATIENT' : 'ROLE_ADMIN'),
         roleLabel: isDoc ? 'Doctor / Physician' : (isPat ? 'Patient' : 'System Administrator'),
-        username: found.username || found.email.split('@')[0],
+        username: found.username || (found.email ? found.email.split('@')[0] : 'user'),
         fullName: found.name || found.fullName,
         email: found.email,
         department: found.department || (isDoc ? 'Internal Medicine' : 'General Care'),
@@ -477,6 +542,22 @@ export const EhrProvider = ({ children }) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
     setActiveTab('overview');
+
+    // If logging in as patient, update selectedPatientId to match their patient record!
+    if (user.role === 'ROLE_PATIENT') {
+      const match = patients.find(p => 
+        (user.patientId && p.id === user.patientId) ||
+        (user.mrn && p.mrn === user.mrn) ||
+        (user.username && p.username && p.username.toLowerCase() === user.username.toLowerCase()) ||
+        (user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()) ||
+        (user.fullName && p.fullName && p.fullName.toLowerCase() === user.fullName.toLowerCase()) ||
+        (user.fullName && `${p.firstName} ${p.lastName}`.toLowerCase() === user.fullName.toLowerCase())
+      );
+      if (match) {
+        setSelectedPatientId(match.id);
+      }
+    }
+
     showToast(`Signed in successfully as ${user.fullName}`, 'success');
     return { success: true, user };
   };
@@ -499,15 +580,19 @@ export const EhrProvider = ({ children }) => {
       firstName: cleanName.split(' ')[0] || cleanName,
       lastName: cleanName.split(' ').slice(1).join(' ') || 'Patient',
       fullName: cleanName,
+      username: cleanUsername,
+      email: cleanEmail,
       dateOfBirth: formData.dateOfBirth || '1995-01-01',
       age: Number(formData.age) || 30,
       gender: formData.gender || 'Female',
       bloodGroup: formData.bloodGroup || 'O+',
       phone: formData.phone || '+1 (555) 000-0000',
+      contactPhone: formData.phone || '+1 (555) 000-0000',
       allergies: formData.allergies || 'None (NKDA)',
       emergencyContact: formData.emergencyContact || 'Family Emergency Contact',
       room: 'Outpatient Reception',
       status: 'Active',
+      registeredDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
 
     const newUser = {
@@ -727,72 +812,256 @@ export const EhrProvider = ({ children }) => {
     showToast('Prescription marked as discontinued.', 'info');
   };
 
-  const registerPatient = (patientData) => {
-    const newId = patients.length + 1;
+  const registerPatient = async (patientData) => {
+    const newId = Date.now();
     const suffix = Math.floor(1000 + Math.random() * 9000);
+    const firstName = (patientData.firstName || '').trim() || 'Patient';
+    const lastName = (patientData.lastName || '').trim() || 'New';
+    const fullName = patientData.fullName || `${firstName} ${lastName}`.trim();
+    const mrn = patientData.mrn || `MRN-2026-${suffix}`;
+    
+    // Auto-generate or use provided username and password for login!
+    const generatedUsername = (patientData.username && patientData.username.trim().toLowerCase()) ||
+      (patientData.email ? patientData.email.split('@')[0].toLowerCase() : `${firstName.toLowerCase()}_${suffix}`);
+    
+    const generatedPassword = (patientData.password && patientData.password.trim()) || 'Patient#2026';
+    const cleanEmail = (patientData.email && patientData.email.trim()) || `${generatedUsername}@careconnect.org`;
+    const phone = patientData.phone || patientData.contactPhone || '+1 (555) 000-0000';
+
     const newPatient = {
       ...patientData,
       id: newId,
-      mrn: `MRN-2026-${suffix}`,
-      status: 'Admitted',
+      mrn: mrn,
+      firstName: firstName,
+      lastName: lastName,
+      fullName: fullName,
+      dateOfBirth: patientData.dateOfBirth || '1995-01-01',
+      age: Number(patientData.age) || 30,
+      gender: patientData.gender || 'Female',
+      bloodGroup: patientData.bloodGroup || 'O+',
+      phone: phone,
+      contactPhone: phone,
+      email: cleanEmail,
+      username: generatedUsername,
+      allergies: patientData.allergies || 'None (NKDA)',
+      emergencyContact: patientData.emergencyContact || 'Family Emergency Contact',
+      room: patientData.room || 'Triage Room 1',
+      status: patientData.status || 'Admitted',
+      registeredDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
-    setPatients([newPatient, ...patients]);
+
+    // 1. Add to patients state
+    setPatients(prev => [newPatient, ...prev]);
     setSelectedPatientId(newId);
-    showToast(`Patient registered with ${newPatient.mrn}`, 'success');
+
+    // 2. CRITICAL: Add a user login account to systemUsers so they CAN LOG IN!
+    const newSystemUser = {
+      id: newId,
+      name: fullName,
+      fullName: fullName,
+      username: generatedUsername,
+      password: generatedPassword,
+      email: cleanEmail,
+      phone: phone,
+      role: 'Patient',
+      roleLabel: 'Patient',
+      department: 'Outpatient Portal',
+      status: 'Active',
+      lastLogin: 'Pending First Login',
+      patientId: newId,
+      mrn: mrn,
+    };
+
+    setSystemUsers(prev => [
+      ...prev.filter(u => (u.username || '').toLowerCase() !== generatedUsername.toLowerCase() && (u.email || '').toLowerCase() !== cleanEmail.toLowerCase()),
+      newSystemUser
+    ]);
+
+    // 3. Log audit event
+    setAuditLogs(prev => [{
+      id: prev.length + 901,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      user: currentUser ? currentUser.fullName : fullName,
+      action: 'PATIENT_ENROLLED',
+      details: `Enrolled patient ${fullName} (${mrn}). Login provisioned: '${generatedUsername}'`
+    }, ...prev]);
+
+    // 4. Send to backend REST API
+    try {
+      await api.registerPatient({
+        mrn: mrn,
+        firstName: firstName,
+        lastName: lastName,
+        dateOfBirth: newPatient.dateOfBirth,
+        age: newPatient.age,
+        gender: newPatient.gender,
+        bloodGroup: newPatient.bloodGroup,
+        phone: phone,
+        emergencyContact: newPatient.emergencyContact,
+        allergies: newPatient.allergies,
+        room: newPatient.room,
+        status: newPatient.status
+      }, currentUser?.fullName);
+    } catch (err) {
+      console.warn('Backend patient sync offline, saved locally.');
+    }
+
+    try {
+      await api.registerPatientAccount({
+        fullName: fullName,
+        username: generatedUsername,
+        password: generatedPassword,
+        email: cleanEmail,
+        phone: phone,
+      });
+    } catch (err) {
+      console.warn('Backend patient account sync offline, saved locally.');
+    }
+
+    showToast(`Patient ${fullName} registered (${mrn})! Portal Login: ${generatedUsername} / ${generatedPassword}`, 'success');
+    return { success: true, patient: newPatient, user: newSystemUser };
   };
 
   const addSystemUser = async (userData) => {
-    const newId = systemUsers.length + 101;
-    const username = userData.username?.trim() || (userData.email ? userData.email.split('@')[0] : `user_${newId}`);
-    const department = userData.department || userData.specialty || (userData.role === 'Doctor' ? 'Internal Medicine' : 'Hospital Operations');
-    const password = userData.password ? userData.password.trim() : 'Doctor#2026';
+    const newId = Date.now();
+    const role = userData.role || 'Doctor';
+    const isPatientRole = role === 'Patient' || role === 'ROLE_PATIENT';
+    const fullName = userData.name?.trim() || userData.fullName?.trim() || 'New User';
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    const username = userData.username?.trim().toLowerCase() || (userData.email ? userData.email.split('@')[0].toLowerCase() : `user_${suffix}`);
+    const department = userData.department || userData.specialty || (role === 'Doctor' ? 'Internal Medicine' : (isPatientRole ? 'Outpatient Portal' : 'Hospital Operations'));
+    const password = userData.password ? userData.password.trim() : (isPatientRole ? 'Patient#2026' : 'Doctor#2026');
+    const phone = userData.phone || '+1 (555) 100-0100';
+    const email = userData.email || `${username}@careconnect.org`;
     
+    let patientRecord = null;
+    let mrn = null;
+
+    // If role is Patient, also create the patient profile in patients so they show in clinical records!
+    if (isPatientRole) {
+      mrn = `MRN-2026-${suffix}`;
+      const parts = fullName.split(' ');
+      const first = parts[0] || 'Patient';
+      const last = parts.slice(1).join(' ') || 'User';
+
+      patientRecord = {
+        id: newId,
+        mrn: mrn,
+        firstName: first,
+        lastName: last,
+        fullName: fullName,
+        dateOfBirth: userData.dateOfBirth || '1995-01-01',
+        age: Number(userData.age) || 30,
+        gender: userData.gender || 'Female',
+        bloodGroup: userData.bloodGroup || 'O+',
+        phone: phone,
+        contactPhone: phone,
+        email: email,
+        username: username,
+        allergies: userData.allergies || 'None (NKDA)',
+        emergencyContact: userData.emergencyContact || 'Family Emergency Contact',
+        room: 'Outpatient Clinic',
+        status: 'Active',
+        registeredDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
+      setPatients(prev => [patientRecord, ...prev]);
+      setSelectedPatientId(newId);
+
+      // Save to backend
+      try {
+        await api.registerPatient({
+          mrn: mrn,
+          firstName: first,
+          lastName: last,
+          dateOfBirth: patientRecord.dateOfBirth,
+          age: patientRecord.age,
+          gender: patientRecord.gender,
+          bloodGroup: patientRecord.bloodGroup,
+          phone: phone,
+          emergencyContact: patientRecord.emergencyContact,
+          allergies: patientRecord.allergies,
+          room: patientRecord.room,
+          status: patientRecord.status
+        }, currentUser?.fullName);
+      } catch (err) {}
+
+      try {
+        await api.registerPatientAccount({
+          fullName: fullName,
+          username: username,
+          password: password,
+          email: email,
+          phone: phone,
+        });
+      } catch (err) {}
+    }
+
     const newUser = {
       ...userData,
       id: newId,
+      name: fullName,
+      fullName: fullName,
       username: username,
       password: password,
+      role: isPatientRole ? 'Patient' : role,
+      roleLabel: isPatientRole ? 'Patient' : (role === 'Doctor' ? 'Doctor / Physician' : role),
       department: department,
       status: 'Active',
       lastLogin: 'Pending First Login',
+      patientId: patientRecord ? newId : undefined,
+      mrn: mrn || undefined,
+      email: email,
+      phone: phone,
     };
     setSystemUsers(prev => [...prev, newUser]);
 
     // If new user is a Doctor, dynamically add to the clinic doctors list for appointments
-    if (userData.role === 'Doctor') {
+    if (role === 'Doctor') {
       const suiteLetter = String.fromCharCode(65 + (doctorsList.length % 26));
       setDoctorsList(prev => [
         ...prev,
         {
           id: newId,
-          name: userData.name,
+          name: fullName,
           specialty: department,
           room: `Clinic Suite ${suiteLetter}`,
         }
       ]);
-    }
 
-    // Transmit to Backend API
-    try {
-      await api.provisionStaff({
-        fullName: userData.name,
-        username: username,
-        password: password,
-        email: userData.email,
-        phone: userData.phone || '+1 (555) 100-0100',
-        department: department,
-        role: userData.role === 'Doctor' ? 'ROLE_DOCTOR' : (userData.role === 'Administrator' ? 'ROLE_ADMIN' : 'ROLE_NURSE')
-      });
-    } catch (err) {}
+      // Transmit to Backend API
+      try {
+        await api.provisionStaff({
+          fullName: fullName,
+          username: username,
+          password: password,
+          email: email,
+          phone: phone,
+          department: department,
+          role: 'ROLE_DOCTOR'
+        });
+      } catch (err) {}
+    } else if (!isPatientRole) {
+      try {
+        await api.provisionStaff({
+          fullName: fullName,
+          username: username,
+          password: password,
+          email: email,
+          phone: phone,
+          department: department,
+          role: role === 'Administrator' ? 'ROLE_ADMIN' : 'ROLE_NURSE'
+        });
+      } catch (err) {}
+    }
 
     setAuditLogs(prev => [{
       id: prev.length + 901,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       user: currentUser.fullName,
       action: 'USER_PROVISIONED',
-      details: `Admin provisioned ${userData.role} account: ${newUser.name} (Username: ${username}, Dept: ${department})`
+      details: `Admin provisioned ${role} account: ${fullName} (Username: ${username}, Password: ${password})`
     }, ...prev]);
-    showToast(`${userData.role} ${newUser.name} provisioned! Login username: ${username}`, 'success');
+    showToast(`${role} ${fullName} provisioned! Login username: ${username}`, 'success');
   };
 
   const removeSystemUser = async (userId) => {

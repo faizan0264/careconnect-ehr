@@ -24,7 +24,21 @@ public class AuthService {
     private AuditLogRepository auditLogRepository;
 
     public AuthResponse authenticate(LoginRequest request) {
-        Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            return new AuthResponse(false, "Username or email is required.", null, null, null, null, null);
+        }
+
+        String identifier = request.getUsername().trim();
+        Optional<User> userOpt = userRepository.findByUsername(identifier);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByEmail(identifier);
+        }
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findAll().stream()
+                .filter(u -> (u.getUsername() != null && u.getUsername().equalsIgnoreCase(identifier)) ||
+                             (u.getEmail() != null && u.getEmail().equalsIgnoreCase(identifier)))
+                .findFirst();
+        }
         
         if (userOpt.isEmpty()) {
             return new AuthResponse(false, "Invalid username or password.", null, null, null, null, null);
@@ -36,9 +50,10 @@ public class AuthService {
             return new AuthResponse(false, "Password cannot be blank.", null, null, null, null, null);
         }
 
+        String inputPass = request.getPassword().trim();
         // Strict password matching against user's stored password
-        boolean isValid = (user.getPasswordHash() != null && request.getPassword().equals(user.getPasswordHash())) ||
-                          (user.getPassword() != null && request.getPassword().equals(user.getPassword()));
+        boolean isValid = (user.getPasswordHash() != null && inputPass.equals(user.getPasswordHash().trim())) ||
+                          (user.getPassword() != null && inputPass.equals(user.getPassword().trim()));
 
         if (!isValid) {
             return new AuthResponse(false, "Invalid credentials. Incorrect password.", null, null, null, null, null);

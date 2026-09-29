@@ -353,8 +353,8 @@ export const AdminDashboard = () => {
               <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 text-[11px] flex items-start space-x-2">
                 <Shield className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="font-semibold block text-purple-950">Provider Provisioning Console</strong>
-                  Healthcare providers (Doctors & Staff) cannot self-register. Once added here, the doctor can immediately log in on the Sign-In screen.
+                  <strong className="font-semibold block text-purple-950">User Provisioning Console</strong>
+                  Provision hospital providers (Doctors/Staff) or Patients. Once added here, the user can immediately log in on the Sign-In screen with their assigned credentials.
                 </div>
               </div>
 
@@ -366,6 +366,7 @@ export const AdminDashboard = () => {
                   className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 text-xs"
                 >
                   <option value="Doctor">Doctor / Attending Physician</option>
+                  <option value="Patient">Patient</option>
                   <option value="Nurse">Registered Nurse (RN)</option>
                   <option value="Pharmacist">Clinical Pharmacist</option>
                   <option value="Lab Technician">Laboratory Specialist</option>

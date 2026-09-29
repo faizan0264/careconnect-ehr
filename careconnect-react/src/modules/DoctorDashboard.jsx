@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEhr } from '../context/EhrContext';
 import { MedicalReportVaultModal } from '../components/MedicalReportVaultModal';
 import { 
@@ -63,12 +63,15 @@ export const DoctorDashboard = () => {
   const [newPatient, setNewPatient] = useState({
     firstName: '',
     lastName: '',
-    dateOfBirth: '1990-01-01',
-    age: 36,
+    username: '',
+    password: 'Patient#2026',
+    email: '',
+    dateOfBirth: '1995-01-01',
+    age: 30,
     gender: 'Male',
     bloodGroup: 'O+',
     phone: '+1 (555) 123-4567',
-    allergies: 'Penicillin',
+    allergies: 'None (NKDA)',
     emergencyContact: 'Family - +1 (555) 999-0000',
     room: 'Exam Room 2',
   });
@@ -76,6 +79,16 @@ export const DoctorDashboard = () => {
   // Vitals & SOAP local edit states
   const [vitals, setVitals] = useState(encounter.vitals);
   const [soap, setSoap] = useState(encounter.soap);
+
+  // Sync vitals and SOAP whenever selected patient changes
+  useEffect(() => {
+    if (encounter?.vitals) {
+      setVitals(encounter.vitals);
+    }
+    if (encounter?.soap) {
+      setSoap(encounter.soap);
+    }
+  }, [selectedPatient?.id, encounter]);
 
   // CPOE state
   const [newOrderName, setNewOrderName] = useState('');
@@ -100,11 +113,26 @@ export const DoctorDashboard = () => {
     p.mrn.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePatientSubmit = (e) => {
+  const handlePatientSubmit = async (e) => {
     e.preventDefault();
     if (!newPatient.firstName || !newPatient.lastName) return;
-    registerPatient(newPatient);
+    await registerPatient(newPatient);
     setShowAddPatientModal(false);
+    setNewPatient({
+      firstName: '',
+      lastName: '',
+      username: '',
+      password: 'Patient#2026',
+      email: '',
+      dateOfBirth: '1995-01-01',
+      age: 30,
+      gender: 'Male',
+      bloodGroup: 'O+',
+      phone: '+1 (555) 123-4567',
+      allergies: 'None (NKDA)',
+      emergencyContact: 'Family - +1 (555) 999-0000',
+      room: 'Exam Room 2',
+    });
   };
 
   const handleOrderSubmit = (e) => {
@@ -1047,19 +1075,23 @@ export const DoctorDashboard = () => {
       {/* MODAL: REGISTER PATIENT */}
       {showAddPatientModal && (
         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 shadow-xl text-xs">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-bold text-sm text-slate-900">Register New Patient</h3>
-              <button onClick={() => setShowAddPatientModal(false)}><X className="w-4 h-4 text-slate-400" /></button>
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-3.5 shadow-xl text-xs max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-2.5">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Register New Patient & Provision Portal</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Enrolls into EHR Master Patient Index & activates patient login credentials.</p>
+              </div>
+              <button onClick={() => setShowAddPatientModal(false)}><X className="w-4 h-4 text-slate-400 hover:text-slate-600" /></button>
             </div>
 
             <form onSubmit={handlePatientSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-slate-600 mb-1 font-medium">First Name *</label>
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Aisha"
                     value={newPatient.firstName}
                     onChange={(e) => setNewPatient({ ...newPatient, firstName: e.target.value })}
                     className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -1070,6 +1102,7 @@ export const DoctorDashboard = () => {
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Patel"
                     value={newPatient.lastName}
                     onChange={(e) => setNewPatient({ ...newPatient, lastName: e.target.value })}
                     className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -1077,7 +1110,21 @@ export const DoctorDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={newPatient.dateOfBirth}
+                    onChange={(e) => {
+                      const dobVal = e.target.value;
+                      const birthYear = new Date(dobVal).getFullYear();
+                      const currYear = new Date().getFullYear();
+                      setNewPatient({ ...newPatient, dateOfBirth: dobVal, age: Math.max(1, currYear - birthYear) });
+                    }}
+                    className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
                 <div>
                   <label className="block text-slate-600 mb-1 font-medium">Age</label>
                   <input
@@ -1087,6 +1134,21 @@ export const DoctorDashboard = () => {
                     className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">Gender</label>
+                  <select
+                    value={newPatient.gender}
+                    onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                    className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-slate-600 mb-1 font-medium">Blood Group</label>
                   <select
@@ -1095,38 +1157,97 @@ export const DoctorDashboard = () => {
                     className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="O+">O+</option>
+                    <option value="O-">O-</option>
                     <option value="A+">A+</option>
+                    <option value="A-">A-</option>
                     <option value="B+">B+</option>
+                    <option value="B-">B-</option>
                     <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
                   </select>
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">Contact Phone</label>
+                  <input
+                    type="text"
+                    placeholder="+1 (555) 000-0000"
+                    value={newPatient.phone}
+                    onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                    className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">Patient Email</label>
+                  <input
+                    type="email"
+                    placeholder="patient@example.com"
+                    value={newPatient.email}
+                    onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                    className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-slate-600 mb-1 font-medium">Drug Allergies (Required)</label>
+                <label className="block text-slate-600 mb-1 font-medium">Documented Allergies *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Penicillin or NKDA"
+                  placeholder="e.g. Penicillin, NSAIDs or None (NKDA)"
                   value={newPatient.allergies}
                   onChange={(e) => setNewPatient({ ...newPatient, allergies: e.target.value })}
                   className="w-full p-2 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
 
+              {/* Login Credentials Box */}
+              <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
+                <div className="flex items-center space-x-1.5 text-blue-900 font-semibold">
+                  <Lock className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Patient Portal Sign-In Credentials</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] text-slate-600 mb-0.5">Assigned Username</label>
+                    <input
+                      type="text"
+                      placeholder="Auto-generated if blank"
+                      value={newPatient.username}
+                      onChange={(e) => setNewPatient({ ...newPatient, username: e.target.value })}
+                      className="w-full p-1.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-slate-600 mb-0.5">Initial Password</label>
+                    <input
+                      type="text"
+                      placeholder="Patient#2026"
+                      value={newPatient.password}
+                      onChange={(e) => setNewPatient({ ...newPatient, password: e.target.value })}
+                      className="w-full p-1.5 border border-slate-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-blue-700">The patient can sign into the Patient Portal immediately using this username and password.</p>
+              </div>
+
               <div className="flex justify-end space-x-2 pt-2 border-t">
                 <button
                   type="button"
                   onClick={() => setShowAddPatientModal(false)}
-                  className="px-3 py-1.5 border rounded-lg"
+                  className="px-3 py-1.5 border rounded-lg text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg font-semibold"
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center space-x-1.5"
                 >
-                  Generate MRN & Save
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Enroll Patient & Create Login</span>
                 </button>
               </div>
             </form>

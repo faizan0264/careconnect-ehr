@@ -47,7 +47,7 @@ export const PatientDirectory = () => {
     setCurrentView('encounter');
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (!formData.firstName || !formData.lastName) return;
 
@@ -55,7 +55,7 @@ export const PatientDirectory = () => {
     const currentYear = new Date().getFullYear();
     const calculatedAge = currentYear - birthYear;
 
-    registerPatient({
+    await registerPatient({
       ...formData,
       age: calculatedAge,
     });

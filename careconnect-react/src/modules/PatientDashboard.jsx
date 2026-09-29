@@ -72,10 +72,10 @@ export const PatientDashboard = () => {
   const isCurrentSlotBusy = occupiedSlots.includes(selectedSlot.trim().toUpperCase());
   const selectedDocObj = doctorsList.find(d => d.id === Number(selectedDoctorId)) || doctorsList[0];
 
-  const activeMeds = prescriptions.filter(p => p.status === 'Active');
-  const completedOrders = orders.filter(o => o.status === 'Completed');
-  const patientAppointments = appointments.filter(a => a.patientId === selectedPatient.id);
-  const patientReports = (reports || []).filter(r => Number(r.patientId) === Number(selectedPatient.id));
+  const activeMeds = prescriptions.filter(p => p.status === 'Active' && (!p.patientId || p.patientId === selectedPatient?.id));
+  const completedOrders = orders.filter(o => o.status === 'Completed' && (!o.patientId || o.patientId === selectedPatient?.id));
+  const patientAppointments = appointments.filter(a => a.patientId === selectedPatient?.id);
+  const patientReports = (reports || []).filter(r => Number(r.patientId) === Number(selectedPatient?.id));
 
   const filteredReports = patientReports.filter(r => {
     const matchesFilter = reportFilter === 'ALL' || r.reportType === reportFilter;
@@ -166,10 +166,10 @@ export const PatientDashboard = () => {
             Patient Portal View
           </span>
           <h1 className="text-xl font-bold text-slate-900 mt-2">
-            Welcome back, {selectedPatient.firstName} {selectedPatient.lastName}
+            Welcome back, {selectedPatient?.firstName || 'Valued'} {selectedPatient?.lastName || 'Patient'}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            MRN: <strong>{selectedPatient.mrn}</strong> • DOB: {selectedPatient.dateOfBirth} • Blood Group: {selectedPatient.bloodGroup}
+            MRN: <strong>{selectedPatient?.mrn || 'N/A'}</strong> • DOB: {selectedPatient?.dateOfBirth || 'N/A'} • Blood Group: {selectedPatient?.bloodGroup || 'N/A'}
           </p>
         </div>
 

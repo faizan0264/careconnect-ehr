@@ -17,13 +17,13 @@ export const PatientHeader = () => {
           {/* Left: Patient Identification & Demographics Profile */}
           <div className="flex items-start sm:items-center space-x-3">
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-hospital-100 text-hospital-800 font-extrabold flex items-center justify-center text-sm border-2 border-hospital-600 shadow-sm flex-shrink-0 mt-0.5 sm:mt-0">
-              {activePatient.lastName[0]}{activePatient.firstName[0]}
+              {(activePatient.lastName || 'P')[0]}{(activePatient.firstName || 'P')[0]}
             </div>
 
             <div>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-                  {activePatient.lastName}, {activePatient.firstName}
+                  {activePatient.lastName || ''}, {activePatient.firstName || ''}
                 </h1>
                 
                 {/* MRN Badge */}
