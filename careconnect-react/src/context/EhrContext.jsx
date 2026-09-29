@@ -430,18 +430,6 @@ export const EhrProvider = ({ children }) => {
     saveStorage(STORAGE_KEY_REPORTS, reports);
   }, [reports]);
 
-  useEffect(() => {
-    saveStorage(STORAGE_KEY_ENCOUNTERS, encountersMap);
-  }, [encountersMap]);
-
-  useEffect(() => {
-    saveStorage(STORAGE_KEY_ORDERS, orders);
-  }, [orders]);
-
-  useEffect(() => {
-    saveStorage(STORAGE_KEY_PRESCRIPTIONS, prescriptions);
-  }, [prescriptions]);
-
   // Sync to backend on mount if online
   useEffect(() => {
     let isMounted = true;
@@ -736,6 +724,18 @@ export const EhrProvider = ({ children }) => {
   const [encountersMap, setEncountersMap] = useState(() => loadStorage(STORAGE_KEY_ENCOUNTERS, initialEncounters));
   const [orders, setOrders] = useState(() => loadStorage(STORAGE_KEY_ORDERS, initialOrders));
   const [prescriptions, setPrescriptions] = useState(() => loadStorage(STORAGE_KEY_PRESCRIPTIONS, initialPrescriptions));
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_ENCOUNTERS, encountersMap);
+  }, [encountersMap]);
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_ORDERS, orders);
+  }, [orders]);
+
+  useEffect(() => {
+    saveStorage(STORAGE_KEY_PRESCRIPTIONS, prescriptions);
+  }, [prescriptions]);
 
   // Dynamically resolve the active patient's encounter
   const encounter = useMemo(() => {
