@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend: Debug in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/careconnect-react/src",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*"
+      },
+      "preLaunchTask": "Frontend: Start Dev Server"
+    },
+    {
+      "name": "Frontend: Debug in Edge",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/careconnect-react/src",
+      "preLaunchTask": "Frontend: Start Dev Server"
+    },
+    {
+      "name": "Backend: Debug Spring Boot Application",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "com.careconnect.ehr.CareConnectApplication",
+      "projectName": "careconnect-backend",
+      "cwd": "${workspaceFolder}/careconnect-backend",
+      "env": {
+        "SERVER_PORT": "8080"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "🚀 Full Stack: Run Frontend + Backend",
+      "configurations": [
+        "Backend: Debug Spring Boot Application",
+        "Frontend: Debug in Chrome"
+      ]
+    }
+  ]
+}

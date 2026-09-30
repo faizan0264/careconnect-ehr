@@ -1,0 +1,80 @@
+{
+  "folders": [
+    {
+      "name": "🏥 CareConnect - Root",
+      "path": "."
+    },
+    {
+      "name": "⚛️ Frontend (React / Vite)",
+      "path": "careconnect-react"
+    },
+    {
+      "name": "☕ Backend (Spring Boot 3.3.4)",
+      "path": "careconnect-backend"
+    }
+  ],
+  "settings": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "maven.executable.path": "${workspaceFolder:🏥 CareConnect - Root}/maven/apache-maven-3.9.6/bin/mvn.cmd"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "▶️ Start React Frontend (Vite: 5173)",
+        "type": "shell",
+        "command": "npm run dev",
+        "options": {
+          "cwd": "${workspaceFolder:⚛️ Frontend (React / Vite)}"
+        },
+        "isBackground": true,
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated",
+          "group": "frontend"
+        }
+      },
+      {
+        "label": "▶️ Start Spring Boot Backend (Port 8080)",
+        "type": "shell",
+        "command": "powershell -ExecutionPolicy Bypass -Command \"if (Test-Path '${workspaceFolder:🏥 CareConnect - Root}/maven/apache-maven-3.9.6/bin/mvn.cmd') { $env:PATH = '${workspaceFolder:🏥 CareConnect - Root}/maven/apache-maven-3.9.6/bin;' + $env:PATH }; mvn spring-boot:run\"",
+        "options": {
+          "cwd": "${workspaceFolder:☕ Backend (Spring Boot 3.3.4)}"
+        },
+        "isBackground": true,
+        "presentation": {
+          "reveal": "always",
+          "panel": "dedicated",
+          "group": "backend"
+        }
+      },
+      {
+        "label": "🚀 Start Full Stack (Frontend + Backend)",
+        "dependsOn": [
+          "▶️ Start Spring Boot Backend (Port 8080)",
+          "▶️ Start React Frontend (Vite: 5173)"
+        ],
+        "dependsOrder": "parallel"
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Open Web App (Chrome: 5173)",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173"
+      },
+      {
+        "name": "Open Web App (Edge: 5173)",
+        "type": "msedge",
+        "request": "launch",
+        "url": "http://localhost:5173"
+      }
+    ]
+  }
+}

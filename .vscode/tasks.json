@@ -1,0 +1,100 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Frontend: Start Dev Server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/careconnect-react"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE.*",
+          "endsPattern": ".*Local:.*http://localhost:5173/.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "frontend"
+      }
+    },
+    {
+      "label": "Frontend: Install Dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}/careconnect-react"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Frontend: Production Build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/careconnect-react"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Backend: Start Spring Boot",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -Command \"if (Test-Path '${workspaceFolder}/maven/apache-maven-3.9.6/bin/mvn.cmd') { $env:PATH = '${workspaceFolder}/maven/apache-maven-3.9.6/bin;' + $env:PATH }; mvn spring-boot:run\"",
+      "options": {
+        "cwd": "${workspaceFolder}/careconnect-backend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Starting CareConnectApplication.*",
+          "endsPattern": ".*Started CareConnectApplication in.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      }
+    },
+    {
+      "label": "Backend: Maven Clean Build",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -Command \"if (Test-Path '${workspaceFolder}/maven/apache-maven-3.9.6/bin/mvn.cmd') { $env:PATH = '${workspaceFolder}/maven/apache-maven-3.9.6/bin;' + $env:PATH }; mvn clean package -DskipTests\"",
+      "options": {
+        "cwd": "${workspaceFolder}/careconnect-backend"
+      },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "🚀 Run Full Stack (Frontend + Backend)",
+      "dependsOn": [
+        "Backend: Start Spring Boot",
+        "Frontend: Start Dev Server"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
