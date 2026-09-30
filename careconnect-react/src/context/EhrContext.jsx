@@ -92,6 +92,11 @@ export const calculateAgeFromDob = (dobString, fallback = 30) => {
     return Math.max(0, age);
   }
 
+  // Handle future year (birthYear > currentYear) → age is 0
+  if (birthYear && !isNaN(birthYear) && birthYear > currentYear) {
+    return 0;
+  }
+
   const birth = new Date(dobString);
   if (isNaN(birth.getTime())) return fallback;
   let computedAge = currentYear - birth.getFullYear();
@@ -99,7 +104,8 @@ export const calculateAgeFromDob = (dobString, fallback = 30) => {
   if (m < 0 || (m === 0 && currentDay < birth.getDate())) {
     computedAge--;
   }
-  return computedAge >= 0 ? computedAge : fallback;
+  // Future date produces negative age → return 0 instead of fallback
+  return computedAge >= 0 ? computedAge : 0;
 };
 
 export const EhrProvider = ({ children }) => {
