@@ -38,9 +38,13 @@ public class PatientService {
     }
 
     public Patient registerPatient(Patient patient, String staffName) {
-        int suffix = 1000 + new Random().nextInt(9000);
-        patient.setMrn("MRN-2026-" + suffix);
-        patient.setStatus("Admitted");
+        if (patient.getMrn() == null || patient.getMrn().trim().isEmpty()) {
+            int suffix = 1000 + new Random().nextInt(9000);
+            patient.setMrn("MRN-2026-" + suffix);
+        }
+        if (patient.getStatus() == null || patient.getStatus().trim().isEmpty()) {
+            patient.setStatus("Admitted");
+        }
 
         Patient saved = patientRepository.save(patient);
 
